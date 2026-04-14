@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Claude
+.claude/
+
+# Vite cache
+frontend/.vite/
+
+# Build output
+frontend/dist/
+frontend/build/
+
+# Database
+backend/dev.db
+backend/*.db
+backend/*.sqlite
+backend/prisma/*.db
+backend/prisma/*.sqlite
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
