@@ -1,0 +1,200 @@
+@model WebParfum.ViewModels.PerfumeDetailViewModel
+
+@{
+    ViewData["Title"] = Model.Perfume.Name;
+}
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            @if (!string.IsNullOrEmpty(Model.Perfume.ImageUrl))
+            {
+                <img src="@Model.Perfume.ImageUrl" class="card-img-top" alt="@Model.Perfume.Name" />
+            }
+            else
+            {
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                     style="height:300px;">
+                    <i class="bi bi-droplet-half display-1 text-muted"></i>
+                </div>
+            }
+            <div class="card-body">
+                <h3 class="font-serif mb-1">@Model.Perfume.Name</h3>
+                <p class="text-muted">@Model.Perfume.Brand</p>
+
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @if (Model.Perfume.Year.HasValue)
+                    {
+                        <span class="badge bg-secondary">@Model.Perfume.Year</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Perfume.Gender))
+                    {
+                        <span class="badge bg-info text-dark">@Model.Perfume.Gender</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Perfume.Country))
+                    {
+                        <span class="badge bg-light text-dark border">@Model.Perfume.Country</span>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge bg-warning text-dark fs-6">
+                        <i class="bi bi-star-fill"></i> @(Model.Perfume.RatingValue?.ToString("F2") ?? "-")
+                    </span>
+                    <small class="text-muted ms-2">
+                        @(Model.Perfume.RatingCount ?? 0) oy
+                    </small>
+                </div>
+
+                <div class="row text-center mb-3">
+                    <div class="col">
+                        <strong>@Model.LikeCount</strong>
+                        <div class="small text-muted">Beğeni</div>
+                    </div>
+                    <div class="col">
+                        <strong>@Model.CollectionCount</strong>
+                        <div class="small text-muted">Koleksiyon</div>
+                    </div>
+                </div>
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="d-grid gap-2">
+                        <form asp-controller="Likes" asp-action="Toggle" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
+                            <button type="submit" class="btn @(Model.IsLiked ? "btn-danger" : "btn-outline-danger") w-100">
+                                <i class="bi @(Model.IsLiked ? "bi-heart-fill" : "bi-heart")"></i>
+                                @(Model.IsLiked ? "Beğenildi" : "Beğen")
+                            </button>
+                        </form>
+
+                        <form asp-controller="Collection" asp-action="Add" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
+                            <div class="input-group">
+                                <select name="status" class="form-select">
+                                    <option value="owned" selected="@(Model.UserCollectionStatus == "owned")">Sahibim</option>
+                                    <option value="wishlist" selected="@(Model.UserCollectionStatus == "wishlist")">İstek Listem</option>
+                                    <option value="tried" selected="@(Model.UserCollectionStatus == "tried")">Denedim</option>
+                                </select>
+                                <button type="submit" class="btn btn-dark">
+                                    @(Model.UserCollectionStatus != null ? "Güncelle" : "Ekle")
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="font-serif mb-3">Notalar</h5>
+                @if (!string.IsNullOrEmpty(Model.Perfume.TopNotes))
+                {
+                    <div class="mb-2">
+                        <strong class="text-muted small">ÜST:</strong> @Model.Perfume.TopNotes
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Perfume.MiddleNotes))
+                {
+                    <div class="mb-2">
+                        <strong class="text-muted small">ORTA:</strong> @Model.Perfume.MiddleNotes
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Perfume.BaseNotes))
+                {
+                    <div class="mb-2">
+                        <strong class="text-muted small">ALT:</strong> @Model.Perfume.BaseNotes
+                    </div>
+                }
+
+                <hr />
+
+                <h6 class="text-muted small mb-2">ANA AKORLAR</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var accord in new[] { Model.Perfume.Accord1, Model.Perfume.Accord2,
+                              Model.Perfume.Accord3, Model.Perfume.Accord4, Model.Perfume.Accord5 })
+                    {
+                        if (!string.IsNullOrEmpty(accord))
+                        {
+                            <span class="badge bg-light text-dark border">@accord</span>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="font-serif mb-3">Yorumlar (@Model.Reviews.Count)</h5>
+
+                @if (User.Identity?.IsAuthenticated == true && Model.UserReview == null)
+                {
+                    <form asp-controller="Reviews" asp-action="Create" method="post" class="mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
+                        <div class="mb-2">
+                            <label class="form-label small">Puan</label>
+                            <select name="rating" class="form-select form-select-sm" style="max-width:120px;">
+                                <option value="5">★★★★★ (5)</option>
+                                <option value="4">★★★★ (4)</option>
+                                <option value="3" selected>★★★ (3)</option>
+                                <option value="2">★★ (2)</option>
+                                <option value="1">★ (1)</option>
+                            </select>
+                        </div>
+                        <textarea name="body" class="form-control mb-2" rows="2"
+                                  placeholder="Yorumunuz..."></textarea>
+                        <button type="submit" class="btn btn-dark btn-sm">
+                            <i class="bi bi-pencil me-1"></i> Yorum Yaz
+                        </button>
+                    </form>
+                }
+
+                @if (Model.Reviews.Any())
+                {
+                    @foreach (var r in Model.Reviews)
+                    {
+                        <div class="border-bottom py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>@r.User.Username</strong>
+                                    <span class="text-warning ms-2">
+                                        @for (int i = 0; i < r.Rating; i++)
+                                        {
+                                            <i class="bi bi-star-fill"></i>
+                                        }
+                                    </span>
+                                </div>
+                                <small class="text-muted">@r.CreatedAt.ToString("dd.MM.yyyy")</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(r.Body))
+                            {
+                                <p class="mb-0 mt-1">@r.Body</p>
+                            }
+                            @if (Model.UserReview != null && r.Id == Model.UserReview.Id)
+                            {
+                                <form asp-controller="Reviews" asp-action="Delete" asp-route-id="@r.Id"
+                                      method="post" class="mt-2">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Yorumunuzu silmek istiyor musunuz?');">
+                                        <i class="bi bi-trash"></i> Sil
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Henüz yorum yok. İlk yorumu sen yaz!</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

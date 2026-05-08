@@ -1,0 +1,175 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WebParfum.Data;
+using WebParfum.Models;
+using WebParfum.Services;
+using WebParfum.ViewModels;
+
+namespace WebParfum.Controllers;
+
+public class PerfumesController(AppDbContext db, ICurrentUserService currentUser) : Controller
+{
+    public async Task<IActionResult> Index(PerfumeIndexViewModel filter)
+    {
+        ViewData["ActivePage"] = "Discover";
+
+        var query = db.Perfumes.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var s = filter.Search.Trim().ToLower();
+            query = query.Where(p =>
+                EF.Functions.ILike(p.Name, $"%{s}%") ||
+                EF.Functions.ILike(p.Brand, $"%{s}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Brand))
+            query = query.Where(p => p.Brand == filter.Brand);
+
+        if (!string.IsNullOrWhiteSpace(filter.Gender))
+            query = query.Where(p => p.Gender == filter.Gender);
+
+        if (!string.IsNullOrWhiteSpace(filter.Accord))
+        {
+            var a = filter.Accord;
+            query = query.Where(p =>
+                p.Accord1 == a || p.Accord2 == a || p.Accord3 == a ||
+                p.Accord4 == a || p.Accord5 == a);
+        }
+
+        if (filter.Year.HasValue)
+            query = query.Where(p => p.Year == filter.Year);
+
+        query = filter.Sort switch
+        {
+            "newest" => query.OrderByDescending(p => p.Year ?? 0).ThenByDescending(p => p.Id),
+            "rating" => query.OrderByDescending(p => p.RatingValue ?? 0).ThenByDescending(p => p.RatingCount ?? 0),
+            _ => query.OrderByDescending(p => p.RatingCount ?? 0).ThenByDescending(p => p.RatingValue ?? 0),
+        };
+
+        filter.TotalCount = await query.CountAsync();
+        filter.Page = Math.Max(1, filter.Page);
+
+        filter.Perfumes = await query
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync();
+
+        // Meta facets — sadece ilk sayfada hesapla, performans için
+        if (filter.Page == 1)
+        {
+            var brandRows = await db.Perfumes
+                .GroupBy(p => p.Brand)
+                .Select(g => new { Value = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .Take(20)
+                .ToListAsync();
+            filter.Brands = brandRows.Select(b => new FacetItem(b.Value, b.Count)).ToList();
+
+            var genderRows = await db.Perfumes
+                .Where(p => p.Gender != null)
+                .GroupBy(p => p.Gender!)
+                .Select(g => new { Value = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .ToListAsync();
+            filter.Genders = genderRows.Select(g => new FacetItem(g.Value, g.Count)).ToList();
+
+            // Accord aggregation: 5 kolonu C# tarafında union
+            var accordRows = await db.Perfumes
+                .Select(p => new { p.Accord1, p.Accord2, p.Accord3, p.Accord4, p.Accord5 })
+                .ToListAsync();
+
+            filter.Accords = accordRows
+                .SelectMany(r => new[] { r.Accord1, r.Accord2, r.Accord3, r.Accord4, r.Accord5 })
+                .Where(a => !string.IsNullOrEmpty(a))
+                .GroupBy(a => a!)
+                .Select(g => new FacetItem(g.Key, g.Count()))
+                .OrderByDescending(f => f.Count)
+                .Take(20)
+                .ToList();
+        }
+
+        return View(filter);
+    }
+
+    public async Task<IActionResult> Details(int id)
+    {
+        ViewData["ActivePage"] = "Discover";
+
+        var perfume = await db.Perfumes.FirstOrDefaultAsync(p => p.Id == id);
+        if (perfume == null) return NotFound();
+
+        var reviews = await db.Reviews
+            .Include(r => r.User)
+            .Where(r => r.PerfumeId == id)
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(10)
+            .ToListAsync();
+
+        var likeCount = await db.Likes.CountAsync(l => l.PerfumeId == id);
+        var collectionCount = await db.Collections.CountAsync(c => c.PerfumeId == id);
+
+        var vm = new PerfumeDetailViewModel
+        {
+            Perfume = perfume,
+            Reviews = reviews,
+            LikeCount = likeCount,
+            CollectionCount = collectionCount,
+        };
+
+        if (currentUser.IsAuthenticated && currentUser.UserId is int userId)
+        {
+            vm.IsLiked = await db.Likes.AnyAsync(l => l.PerfumeId == id && l.UserId == userId);
+            vm.UserCollectionStatus = await db.Collections
+                .Where(c => c.PerfumeId == id && c.UserId == userId)
+                .Select(c => c.Status)
+                .FirstOrDefaultAsync();
+            vm.UserReview = await db.Reviews
+                .FirstOrDefaultAsync(r => r.PerfumeId == id && r.UserId == userId);
+        }
+
+        return View(vm);
+    }
+
+    [Authorize]
+    [HttpGet]
+    public IActionResult Create()
+    {
+        ViewData["ActivePage"] = "Discover";
+        return View(new PerfumeCreateViewModel());
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(PerfumeCreateViewModel model)
+    {
+        ViewData["ActivePage"] = "Discover";
+        if (!ModelState.IsValid) return View(model);
+
+        var perfume = new Perfume
+        {
+            Name = model.Name.Trim(),
+            Brand = model.Brand.Trim(),
+            Country = model.Country?.Trim(),
+            Gender = model.Gender?.Trim(),
+            Year = model.Year,
+            TopNotes = model.TopNotes?.Trim(),
+            MiddleNotes = model.MiddleNotes?.Trim(),
+            BaseNotes = model.BaseNotes?.Trim(),
+            Accord1 = model.Accord1?.Trim(),
+            Accord2 = model.Accord2?.Trim(),
+            Accord3 = model.Accord3?.Trim(),
+            Accord4 = model.Accord4?.Trim(),
+            Accord5 = model.Accord5?.Trim(),
+            ImageUrl = model.ImageUrl,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        db.Perfumes.Add(perfume);
+        await db.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Details), new { id = perfume.Id });
+    }
+}

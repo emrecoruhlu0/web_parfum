@@ -1,0 +1,100 @@
+@model WebParfum.ViewModels.PerfumeCreateViewModel
+
+@{
+    ViewData["Title"] = "Yeni Parfüm";
+}
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <h2 class="font-serif mb-4">Yeni Parfüm Ekle</h2>
+
+        <form asp-action="Create" method="post" class="card border-0 shadow-sm">
+            @Html.AntiForgeryToken()
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Brand" class="form-label"></label>
+                        <input asp-for="Brand" class="form-control" />
+                        <span asp-validation-for="Brand" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Country" class="form-label"></label>
+                        <input asp-for="Country" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Gender" class="form-label"></label>
+                        <select asp-for="Gender" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="men">Erkek</option>
+                            <option value="women">Kadın</option>
+                            <option value="unisex">Unisex</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Year" class="form-label"></label>
+                        <input asp-for="Year" type="number" class="form-control" />
+                        <span asp-validation-for="Year" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="ImageUrl" class="form-label"></label>
+                        <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
+                        <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="TopNotes" class="form-label"></label>
+                        <input asp-for="TopNotes" class="form-control" placeholder="bergamot, limon..." />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="MiddleNotes" class="form-label"></label>
+                        <input asp-for="MiddleNotes" class="form-control" placeholder="gül, yasemin..." />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="BaseNotes" class="form-label"></label>
+                        <input asp-for="BaseNotes" class="form-control" placeholder="misk, sandal ağacı..." />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Accord1" class="form-label"></label>
+                        <input asp-for="Accord1" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Accord2" class="form-label"></label>
+                        <input asp-for="Accord2" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Accord3" class="form-label"></label>
+                        <input asp-for="Accord3" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Accord4" class="form-label"></label>
+                        <input asp-for="Accord4" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Accord5" class="form-label"></label>
+                        <input asp-for="Accord5" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark">
+                        <i class="bi bi-check-lg me-1"></i> Kaydet
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
