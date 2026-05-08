@@ -26,10 +26,12 @@ public class Perfume
     public string? Accord4 { get; set; }
     public string? Accord5 { get; set; }
 
-    public double RatingValue { get; set; } = 0;
-    public int RatingCount { get; set; } = 0;
+    public double? RatingValue { get; set; }
+    public int? RatingCount { get; set; }
 
-    public string? Image { get; set; }
+    public string? ImageUrl { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Collection> Collections { get; set; } = [];
     public ICollection<DailyLog> DailyLogs { get; set; } = [];

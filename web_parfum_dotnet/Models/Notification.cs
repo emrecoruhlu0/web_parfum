@@ -15,6 +15,9 @@ public class Notification
     [Required, MaxLength(50)]
     public string Type { get; set; } = string.Empty; // like, follow, review, community_invite
 
+    public int? PerfumeId { get; set; }
+    public int? CommunityId { get; set; }
+
     public bool IsRead { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
