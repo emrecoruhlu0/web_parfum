@@ -37,3 +37,9 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# .NET build artifacts
+web_parfum_dotnet/bin/
+web_parfum_dotnet/obj/
+*.user
+*.suo

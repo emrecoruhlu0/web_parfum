@@ -1,0 +1,42 @@
+@model List<WebParfum.Models.Perfume>
+
+@{
+    ViewData["Title"] = "Ana Akış";
+}
+
+<div class="row g-4">
+    <div class="col-12">
+        <h2 class="font-serif mb-1">Merhaba, @User.Identity?.Name!</h2>
+        <p class="text-muted">Günün popüler kokuları</p>
+    </div>
+
+    @foreach (var p in Model)
+    {
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="parfum-card card h-100">
+                <div class="card-body">
+                    <h6 class="font-serif mb-0">@p.Name</h6>
+                    <p class="text-muted small mb-2">@p.Brand</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star-fill"></i> @p.RatingValue.ToString("F1")
+                        </span>
+                        <a asp-controller="Perfumes" asp-action="Detail" asp-route-id="@p.Id"
+                           class="btn btn-sm btn-outline-secondary">Detay</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="col-12">
+            <div class="parfum-card card p-5 text-center">
+                <i class="bi bi-droplet-half fs-1 text-muted mb-3"></i>
+                <h5>Henüz parfüm yok</h5>
+                <p class="text-muted">Veritabanı boş. Seed çalıştırdıktan sonra buraya parfümler gelecek.</p>
+            </div>
+        </div>
+    }
+</div>

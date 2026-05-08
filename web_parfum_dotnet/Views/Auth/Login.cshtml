@@ -1,0 +1,40 @@
+@model WebParfum.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = "_Layout";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="font-serif text-center mb-1" style="color:#1a1a2e;font-size:2rem;">Koku.</h1>
+        <p class="text-center text-muted small mb-4">Parfüm dünyasına giriş yap</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger py-2">
+                @Html.ValidationSummary(false, "", new { @class = "mb-0" })
+            </div>
+        }
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label fw-medium">E-posta</label>
+                <input asp-for="Email" class="form-control" placeholder="ornek@mail.com" autocomplete="email" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Password" class="form-label fw-medium">Şifre</label>
+                <input asp-for="Password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-amber w-100 py-2 fw-semibold">Giriş Yap</button>
+        </form>
+
+        <p class="text-center text-muted mt-3 small">
+            Hesabın yok mu?
+            <a asp-controller="Auth" asp-action="Register" class="text-decoration-none fw-medium" style="color:#d97706;">Kayıt ol</a>
+        </p>
+    </div>
+</div>
