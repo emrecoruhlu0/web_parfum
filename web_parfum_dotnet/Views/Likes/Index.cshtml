@@ -1,0 +1,28 @@
+@model List<WebParfum.Models.Perfume>
+
+@{
+    ViewData["Title"] = "Beğendiklerim";
+}
+
+@* TODO arkadaş: Bu sayfanın tasarımını yapacak. *@
+@* Veri: Model = beğenilen parfümlerin listesi (en yeni başta). *@
+
+<h2>Beğendiklerim</h2>
+
+@if (!Model.Any())
+{
+    <p>Henüz parfüm beğenmedin.</p>
+}
+else
+{
+    <ul>
+        @foreach (var p in Model)
+        {
+            <li>
+                <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@p.Id">
+                    @p.Name — @p.Brand
+                </a>
+            </li>
+        }
+    </ul>
+}

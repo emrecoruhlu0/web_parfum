@@ -48,7 +48,7 @@
 
                 <div class="row text-center mb-3">
                     <div class="col">
-                        <strong>@Model.LikeCount</strong>
+                        <strong data-like-count="@Model.Perfume.Id">@Model.LikeCount</strong>
                         <div class="small text-muted">Beğeni</div>
                     </div>
                     <div class="col">
@@ -63,9 +63,10 @@
                         <form asp-controller="Likes" asp-action="Toggle" method="post">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
-                            <button type="submit" class="btn @(Model.IsLiked ? "btn-danger" : "btn-outline-danger") w-100">
-                                <i class="bi @(Model.IsLiked ? "bi-heart-fill" : "bi-heart")"></i>
-                                @(Model.IsLiked ? "Beğenildi" : "Beğen")
+                            <button type="submit" data-like-toggle="@Model.Perfume.Id"
+                                    class="btn @(Model.IsLiked ? "btn-danger liked" : "btn-outline-danger") w-100">
+                                <span data-like-icon>@(Model.IsLiked ? "♥" : "♡")</span>
+                                <span data-like-label>@(Model.IsLiked ? "Beğenildi" : "Beğen")</span>
                             </button>
                         </form>
 
