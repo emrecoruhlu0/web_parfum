@@ -1,0 +1,55 @@
+@model WebParfum.ViewModels.ConversationViewModel
+@inject WebParfum.Services.ICurrentUserService CurrentUser
+
+@{
+    ViewData["Title"] = $"Mesaj — {Model.OtherUser.Username}";
+    var myId = CurrentUser.UserId;
+}
+
+@*
+    TODO arkadaş: Bire bir mesajlaşma sayfası.
+    - Üst: karşı kullanıcının adı + profil linki
+    - Mesaj listesi: her balon kimden gelmiş (sender vs me)
+    - Alt: yeni mesaj formu (textarea + gönder)
+    - Sayfa açıldığında karşıdan gelen mesajlar otomatik okundu işaretleniyor (zaten controller'da)
+
+    Model.OtherUser, Model.Messages (chronological, sender bilgisi message.SenderId)
+*@
+
+<h2>
+    <a asp-controller="Profile" asp-action="View" asp-route-username="@Model.OtherUser.Username">
+        @Model.OtherUser.Username
+    </a>
+    ile konuşma
+</h2>
+
+<p><a asp-action="Index">‹ Tüm mesajlar</a></p>
+
+<hr />
+
+@if (!Model.Messages.Any())
+{
+    <p>Henüz hiç mesaj yok. İlk mesajı sen gönder!</p>
+}
+else
+{
+    <ul>
+        @foreach (var m in Model.Messages)
+        {
+            <li>
+                <strong>@(m.SenderId == myId ? "Sen" : Model.OtherUser.Username):</strong>
+                @m.Body
+                <small>(@m.CreatedAt.ToString("HH:mm dd.MM.yyyy"))</small>
+            </li>
+        }
+    </ul>
+}
+
+<hr />
+
+<form asp-action="Send" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="username" value="@Model.OtherUser.Username" />
+    <textarea name="body" rows="2" required placeholder="Mesajını yaz..."></textarea>
+    <button type="submit">Gönder</button>
+</form>
