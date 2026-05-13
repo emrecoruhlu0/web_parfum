@@ -1,0 +1,89 @@
+@model List<WebParfum.Models.Notification>
+
+@{
+    ViewData["Title"] = "Bildirimler";
+    var page = (int)(ViewBag.Page ?? 1);
+    var hasMore = (bool)(ViewBag.HasMore ?? false);
+}
+
+@*
+    TODO arkadaş: Bu sayfa bildirim listesi.
+    - Her satır: actor.Username, tip (like/follow/review/community_invite), tarih
+    - Okunmamış olanlar farklı renkte
+    - Üstte "Tümünü Okundu İşaretle" butonu
+    - Sayfalama (basit ileri/geri)
+
+    Notification.Type değerleri: "like", "follow", "review", "community_invite"
+    Notification.PerfumeId, CommunityId nullable — varsa o sayfaya link verilebilir.
+*@
+
+<h2>Bildirimler</h2>
+
+@if (Model.Any(n => !n.IsRead))
+{
+    <form asp-action="MarkAllRead" method="post" style="display:inline">
+        @Html.AntiForgeryToken()
+        <button type="submit">Tümünü Okundu İşaretle</button>
+    </form>
+}
+
+@if (!Model.Any())
+{
+    <p>Hiç bildirim yok.</p>
+}
+else
+{
+    <ul>
+        @foreach (var n in Model)
+        {
+            <li style="@(n.IsRead ? "opacity:.6" : "font-weight:bold")">
+                <strong>@n.Actor.Username</strong>
+                @switch (n.Type)
+                {
+                    case "follow":
+                        <text>seni takip etmeye başladı.</text>
+                        break;
+                    case "like":
+                        <text>bir parfümünü beğendi.</text>
+                        break;
+                    case "review":
+                        <text>sahip olduğun bir parfüme yorum yazdı.</text>
+                        break;
+                    case "community_invite":
+                        <text>seni bir topluluğa davet etti.</text>
+                        break;
+                    default:
+                        <text>(@n.Type)</text>
+                        break;
+                }
+
+                @if (n.PerfumeId.HasValue)
+                {
+                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@n.PerfumeId">→ Parfüm</a>
+                }
+
+                <small>@n.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+
+                @if (!n.IsRead)
+                {
+                    <form asp-action="MarkRead" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@n.Id" />
+                        <button type="submit">Okundu</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+}
+
+<nav>
+    @if (page > 1)
+    {
+        <a asp-action="Index" asp-route-page="@(page - 1)">‹ Önceki</a>
+    }
+    @if (hasMore)
+    {
+        <a asp-action="Index" asp-route-page="@(page + 1)">Sonraki ›</a>
+    }
+</nav>
