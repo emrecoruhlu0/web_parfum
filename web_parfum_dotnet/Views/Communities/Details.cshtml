@@ -1,0 +1,110 @@
+@model WebParfum.ViewModels.CommunityDetailViewModel
+
+@{
+    ViewData["Title"] = Model.Community.Name;
+}
+
+@*
+    TODO arkadaş: Topluluk detay sayfası.
+    - Üst: topluluk adı, açıklama, üye sayısı, kurucu
+    - Buton: "Katıl" / "Ayrıl" (owner için disabled)
+    - Sekmeler veya iki bölüm: Postlar, Üyeler
+    - Post formu (üye değilse gizle): textarea + opsiyonel parfümId
+
+    Model:
+      .Community (Name, Description, Owner, CreatedAt)
+      .MemberCount, .IsMember, .IsOwner
+      .Members -> List<CommunityMember> (User dahil)
+      .Posts -> List<CommunityPost> (User + Perfume dahil)
+*@
+
+<h2>@Model.Community.Name</h2>
+
+@if (!string.IsNullOrEmpty(Model.Community.Description))
+{
+    <p>@Model.Community.Description</p>
+}
+
+<p>
+    <strong>@Model.MemberCount</strong> üye |
+    Kurucu: @Model.Community.Owner.Username
+    @if (Model.IsOwner) { <em>(sen)</em> }
+</p>
+
+@if (!Model.IsOwner)
+{
+    <form asp-action="JoinToggle" method="post" style="display:inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Community.Id" />
+        <button type="submit">@(Model.IsMember ? "Ayrıl" : "Katıl")</button>
+    </form>
+}
+
+<hr />
+
+<h3>Gönderiler (@Model.Posts.Count)</h3>
+
+@if (Model.IsMember)
+{
+    <form asp-action="CreatePost" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Community.Id" />
+        <label>Mesajın:<br />
+            <textarea name="body" rows="2" required></textarea>
+        </label><br />
+        <label>İlgili Parfüm ID (opsiyonel): <input type="number" name="perfumeId" /></label>
+        <button type="submit">Gönder</button>
+    </form>
+}
+else
+{
+    <p><em>Topluluğa katılarak gönderi paylaşabilirsin.</em></p>
+}
+
+@if (!Model.Posts.Any())
+{
+    <p>Henüz gönderi yok.</p>
+}
+else
+{
+    <ul>
+        @foreach (var p in Model.Posts)
+        {
+            <li>
+                <strong>@p.User.Username</strong>
+                <small>(@p.CreatedAt.ToString("dd.MM.yyyy HH:mm"))</small>
+                <p>@p.Body</p>
+                @if (p.Perfume != null)
+                {
+                    <p>→ <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@p.Perfume.Id">
+                        @p.Perfume.Name (@p.Perfume.Brand)
+                    </a></p>
+                }
+                @if (p.UserId == ViewData["__CurrentUserId"] as int? || Model.IsOwner)
+                {
+                    <form asp-action="DeletePost" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="communityId" value="@Model.Community.Id" />
+                        <input type="hidden" name="postId" value="@p.Id" />
+                        <button type="submit" onclick="return confirm('Sil?');">Sil</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+}
+
+<hr />
+
+<h3>Üyeler (@Model.MemberCount)</h3>
+<ul>
+    @foreach (var m in Model.Members)
+    {
+        <li>
+            <a asp-controller="Profile" asp-action="View" asp-route-username="@m.User.Username">
+                @m.User.Username
+            </a>
+            @if (m.Role == "admin") { <em>(admin)</em> }
+        </li>
+    }
+</ul>

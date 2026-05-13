@@ -1,0 +1,38 @@
+@model WebParfum.ViewModels.CommunityCreateViewModel
+
+@{
+    ViewData["Title"] = "Yeni Topluluk";
+}
+
+@* TODO arkadaş: Topluluk oluşturma formu. *@
+
+<h2>Yeni Topluluk Oluştur</h2>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div>
+        <label asp-for="Name"></label>
+        <input asp-for="Name" required />
+        <span asp-validation-for="Name"></span>
+    </div>
+
+    <div>
+        <label asp-for="Description"></label>
+        <textarea asp-for="Description" rows="3"></textarea>
+    </div>
+
+    <div>
+        <label asp-for="ImageUrl"></label>
+        <input asp-for="ImageUrl" />
+        <span asp-validation-for="ImageUrl"></span>
+    </div>
+
+    <button type="submit">Oluştur</button>
+    <a asp-action="Index">İptal</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

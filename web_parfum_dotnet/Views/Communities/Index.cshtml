@@ -1,0 +1,44 @@
+@model WebParfum.ViewModels.CommunityIndexViewModel
+
+@{
+    ViewData["Title"] = "Topluluklar";
+}
+
+@*
+    TODO arkadaş: Topluluk listesi sayfası.
+    - Her satır/kart: topluluk adı, açıklama, üye sayısı, "Üye misin" rozeti
+    - "Yeni Topluluk Oluştur" butonu (Create action'a link)
+    - Topluluk adına tıklayınca Details sayfasına git
+
+    Model.Communities -> List<CommunityListItem>
+      .Community.Name, Description, Image, Owner.Username, CreatedAt
+      .MemberCount, IsMember
+*@
+
+<h2>Topluluklar</h2>
+<p><a asp-action="Create">+ Yeni Topluluk Oluştur</a></p>
+
+@if (!Model.Communities.Any())
+{
+    <p>Henüz topluluk yok.</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in Model.Communities)
+        {
+            <li>
+                <a asp-action="Details" asp-route-id="@item.Community.Id">
+                    <strong>@item.Community.Name</strong>
+                </a>
+                — @item.MemberCount üye
+                @if (item.IsMember) { <em>(üyesin)</em> }
+                @if (!string.IsNullOrEmpty(item.Community.Description))
+                {
+                    <p>@item.Community.Description</p>
+                }
+                <small>Kurucu: @item.Community.Owner.Username</small>
+            </li>
+        }
+    </ul>
+}
