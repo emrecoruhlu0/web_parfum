@@ -1,0 +1,104 @@
+@model WebParfum.ViewModels.DailyLogIndexViewModel
+
+@{
+    ViewData["Title"] = "Günlük Log";
+}
+
+@*
+    TODO arkadaş: Bu sayfa kullanıcının takvim görünümü.
+    - 7 sütunlu (Pzt-Paz) takvim grid'i
+    - Ay başlığı + önceki/sonraki ay navigation
+    - Her hücrede: gün numarası + o gün eklenen parfümler
+    - Hücreye tıklayınca / yanına buton: o tarihe yeni log ekleme formu (modal veya inline)
+    - Form alanları: date (gizli), perfumeId (autocomplete/dropdown), sprays (number), note (textarea)
+
+    Model alanları:
+      Model.Year, Model.Month     -> aktif ay
+      Model.MonthName             -> "Mayıs 2026" gibi (tr-TR)
+      Model.DaysInMonth           -> ayın gün sayısı
+      Model.FirstDayOfWeek        -> 1=Pzt .. 7=Paz (ayın 1'inin haftanın hangi günü)
+      Model.LogsByDay             -> Dictionary<int, List<DailyLog>>
+      Model.TotalLogsThisMonth    -> int
+      Model.PrevMonth, NextMonth  -> (Year, Month) tuple
+
+    Backend endpoint'ler:
+      POST /DailyLog/Create  fields: date (DateOnly), perfumeId, sprays, note?
+      POST /DailyLog/Delete  fields: id, year, month
+*@
+
+<h2>Günlük Log — @Model.MonthName</h2>
+<p>
+    <a asp-action="Index" asp-route-year="@Model.PrevMonth.Year" asp-route-month="@Model.PrevMonth.Month">
+        ‹ Önceki Ay
+    </a>
+    |
+    <a asp-action="Index" asp-route-year="@Model.NextMonth.Year" asp-route-month="@Model.NextMonth.Month">
+        Sonraki Ay ›
+    </a>
+</p>
+<p>Bu ay toplam <strong>@Model.TotalLogsThisMonth</strong> log girişi.</p>
+
+<table border="1" cellpadding="4">
+    <thead>
+        <tr>
+            <th>Pzt</th><th>Sal</th><th>Çar</th><th>Per</th><th>Cum</th><th>Cmt</th><th>Paz</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int day = 1;
+            int totalCells = Model.FirstDayOfWeek - 1 + Model.DaysInMonth;
+            int rows = (int)Math.Ceiling(totalCells / 7.0);
+            for (int r = 0; r < rows; r++)
+            {
+                <tr>
+                    @for (int c = 1; c <= 7; c++)
+                    {
+                        int cellIndex = r * 7 + c;
+                        if (cellIndex < Model.FirstDayOfWeek || day > Model.DaysInMonth)
+                        {
+                            <td>&nbsp;</td>
+                        }
+                        else
+                        {
+                            <td valign="top">
+                                <strong>@day</strong>
+                                @if (Model.LogsByDay.TryGetValue(day, out var dayLogs))
+                                {
+                                    <ul>
+                                        @foreach (var log in dayLogs)
+                                        {
+                                            <li>
+                                                @log.Perfume.Name
+                                                @if (log.Sprays > 0) { <text>(@log.Sprays sıkım)</text> }
+                                                <form asp-action="Delete" method="post" style="display:inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@log.Id" />
+                                                    <input type="hidden" name="year" value="@Model.Year" />
+                                                    <input type="hidden" name="month" value="@Model.Month" />
+                                                    <button type="submit" onclick="return confirm('Sil?');">×</button>
+                                                </form>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                <details>
+                                    <summary>+ Ekle</summary>
+                                    <form asp-action="Create" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="date" value="@(new DateOnly(Model.Year, Model.Month, day))" />
+                                        <label>Parfüm ID: <input type="number" name="perfumeId" required /></label><br />
+                                        <label>Sıkım: <input type="number" name="sprays" value="2" min="0" /></label><br />
+                                        <label>Not: <input type="text" name="note" /></label><br />
+                                        <button type="submit">Kaydet</button>
+                                    </form>
+                                </details>
+                            </td>
+                            day++;
+                        }
+                    }
+                </tr>
+            }
+        }
+    </tbody>
+</table>
