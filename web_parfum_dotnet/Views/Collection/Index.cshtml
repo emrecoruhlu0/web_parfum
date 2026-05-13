@@ -1,0 +1,114 @@
+@model WebParfum.ViewModels.CollectionIndexViewModel
+
+@{
+    ViewData["Title"] = "Koleksiyonum";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="font-serif mb-1">Koleksiyonum</h2>
+        <p class="text-muted mb-0">Sahip olduğun, denediğin ve istediğin parfümler</p>
+    </div>
+    <a asp-controller="Perfumes" asp-action="Index" class="btn btn-outline-dark">
+        <i class="bi bi-search me-1"></i> Parfüm Bul
+    </a>
+</div>
+
+<ul class="nav nav-pills mb-4 gap-2">
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "owned" ? "active bg-dark" : "text-dark")"
+           asp-action="Index" asp-route-status="owned">
+            <i class="bi bi-collection me-1"></i> Sahibim
+            <span class="badge bg-light text-dark ms-1">@Model.OwnedCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "wishlist" ? "active bg-dark" : "text-dark")"
+           asp-action="Index" asp-route-status="wishlist">
+            <i class="bi bi-heart me-1"></i> İstek Listem
+            <span class="badge bg-light text-dark ms-1">@Model.WishlistCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "tried" ? "active bg-dark" : "text-dark")"
+           asp-action="Index" asp-route-status="tried">
+            <i class="bi bi-droplet me-1"></i> Denedim
+            <span class="badge bg-light text-dark ms-1">@Model.TriedCount</span>
+        </a>
+    </li>
+</ul>
+
+@if (!Model.Items.Any())
+{
+    <div class="parfum-card card p-5 text-center">
+        <i class="bi bi-collection fs-1 text-muted mb-3"></i>
+        <h5>Henüz buraya bir şey eklemedin</h5>
+        <p class="text-muted">Parfüm sayfasından "@(Model.Tab == "owned" ? "Sahibim" : Model.Tab == "wishlist" ? "İstek Listem" : "Denedim")" butonunu kullanabilirsin.</p>
+        <div>
+            <a asp-controller="Perfumes" asp-action="Index" class="btn btn-dark">
+                <i class="bi bi-search me-1"></i> Parfüm Keşfet
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var item in Model.Items)
+        {
+            <div class="col-sm-6 col-lg-4">
+                <div class="parfum-card card h-100">
+                    <div class="card-body">
+                        <h6 class="font-serif mb-1 text-truncate">@item.Perfume.Name</h6>
+                        <p class="text-muted small mb-2 text-truncate">@item.Perfume.Brand</p>
+
+                        @if (Model.Tab == "owned")
+                        {
+                            <form asp-action="UpdateBottleLevel" method="post" class="mb-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="perfumeId" value="@item.PerfumeId" />
+                                <label class="form-label small mb-1 d-flex justify-content-between">
+                                    <span>Şişe Seviyesi</span>
+                                    <span class="text-muted bottle-pct" data-bottle="@item.Id">@item.BottleLevel%</span>
+                                </label>
+                                <input type="range" name="bottleLevel" min="0" max="100" step="5"
+                                       value="@item.BottleLevel" class="form-range bottle-slider"
+                                       data-bottle-target="@item.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-dark mt-1 w-100">
+                                    <i class="bi bi-save me-1"></i> Kaydet
+                                </button>
+                            </form>
+                        }
+
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@item.PerfumeId"
+                               class="btn btn-sm btn-outline-secondary flex-grow-1">
+                                Detay
+                            </a>
+                            <form asp-action="Delete" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="perfumeId" value="@item.PerfumeId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Koleksiyondan çıkarılsın mı?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.bottle-slider').forEach(slider => {
+            slider.addEventListener('input', e => {
+                const id = e.target.dataset.bottleTarget;
+                const label = document.querySelector(`.bottle-pct[data-bottle="${id}"]`);
+                if (label) label.textContent = e.target.value + '%';
+            });
+        });
+    </script>
+}
