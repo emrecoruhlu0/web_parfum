@@ -1,0 +1,29 @@
+using WebParfum.Models;
+
+namespace WebParfum.ViewModels;
+
+public class ProfileViewModel
+{
+    public User User { get; set; } = null!;
+    public bool IsOwnProfile { get; set; }
+    public bool IsFollowing { get; set; }
+
+    public int FollowersCount { get; set; }
+    public int FollowingCount { get; set; }
+    public int ReviewsCount { get; set; }
+    public int CollectionCount { get; set; }
+    public int DailyLogCount { get; set; }
+
+    public string Section { get; set; } = "collection"; // collection | logs | reviews
+
+    // Section-specific data
+    public List<Collection> CollectionItems { get; set; } = [];
+    public List<DailyLog> RecentLogs { get; set; } = [];
+    public List<Review> RecentReviews { get; set; } = [];
+
+    // Aggregation (top notes/accords from DailyLogs)
+    public List<NoteFreq> TopNotes { get; set; } = [];
+    public List<NoteFreq> TopAccords { get; set; } = [];
+}
+
+public record NoteFreq(string Name, int Count);

@@ -1,0 +1,165 @@
+@model WebParfum.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = $"@{Model.User.Username}";
+}
+
+@*
+    TODO arkadaş: Bu sayfa kullanıcı profil sayfası.
+    - Üst kısım: avatar, kullanıcı adı, bio, takipçi/takip sayıları
+    - Buton: kendi profilinse "Düzenle", başkasınınsa "Takip Et" / "Takip Bırak"
+    - Sekmeler: Koleksiyon / Günlük Loglar / Yorumlar
+    - Sağ veya alt: TopNotes ve TopAccords (kullanıcının log'larına göre en sık kokuları)
+
+    Mevcut model alanları:
+      Model.User                  -> Username, Email, Bio?, Avatar?, CreatedAt
+      Model.IsOwnProfile          -> bool
+      Model.IsFollowing           -> bool (başkasının profilinde)
+      Model.FollowersCount        -> int
+      Model.FollowingCount        -> int
+      Model.ReviewsCount          -> int
+      Model.CollectionCount       -> int
+      Model.DailyLogCount         -> int
+      Model.Section               -> "collection" | "logs" | "reviews"
+      Model.CollectionItems       -> List<Collection> (section=collection iken dolu)
+      Model.RecentLogs            -> List<DailyLog> (section=logs iken dolu)
+      Model.RecentReviews         -> List<Review> (section=reviews iken dolu)
+      Model.TopNotes              -> List<NoteFreq> (Name, Count)
+      Model.TopAccords            -> List<NoteFreq>
+*@
+
+<h2>@Model.User.Username</h2>
+@if (!string.IsNullOrEmpty(Model.User.Bio))
+{
+    <p>@Model.User.Bio</p>
+}
+
+<p>
+    <strong>@Model.FollowersCount</strong> takipçi |
+    <strong>@Model.FollowingCount</strong> takip |
+    <strong>@Model.CollectionCount</strong> koleksiyon |
+    <strong>@Model.ReviewsCount</strong> yorum |
+    <strong>@Model.DailyLogCount</strong> günlük log
+</p>
+
+@if (Model.IsOwnProfile)
+{
+    <p><em>(Kendi profilin)</em></p>
+}
+else if (User.Identity?.IsAuthenticated == true)
+{
+    <form asp-controller="Follows" asp-action="Toggle" method="post" style="display:inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="username" value="@Model.User.Username" />
+        <button type="submit">@(Model.IsFollowing ? "Takibi Bırak" : "Takip Et")</button>
+    </form>
+}
+
+<hr />
+
+<nav>
+    <a asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="collection">
+        Koleksiyon (@Model.CollectionCount)
+    </a> |
+    <a asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="logs">
+        Günlükler (@Model.DailyLogCount)
+    </a> |
+    <a asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="reviews">
+        Yorumlar (@Model.ReviewsCount)
+    </a>
+</nav>
+
+<hr />
+
+@if (Model.Section == "collection")
+{
+    <h3>Koleksiyon</h3>
+    @if (!Model.CollectionItems.Any())
+    {
+        <p>Henüz parfüm yok.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var c in Model.CollectionItems)
+            {
+                <li>
+                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@c.PerfumeId">
+                        @c.Perfume.Name — @c.Perfume.Brand
+                    </a>
+                    (@c.Status@(c.Status == "owned" ? $", %{c.BottleLevel}" : ""))
+                </li>
+            }
+        </ul>
+    }
+}
+else if (Model.Section == "logs")
+{
+    <h3>Günlük Loglar</h3>
+    @if (!Model.RecentLogs.Any())
+    {
+        <p>Henüz günlük log yok.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var d in Model.RecentLogs)
+            {
+                <li>
+                    @d.Date.ToString("dd.MM.yyyy") —
+                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@d.PerfumeId">
+                        @d.Perfume.Name
+                    </a>
+                    @if (d.Sprays > 0) { <text>(@d.Sprays sıkım)</text> }
+                    @if (!string.IsNullOrEmpty(d.Note)) { <em> — @d.Note</em> }
+                </li>
+            }
+        </ul>
+    }
+}
+else if (Model.Section == "reviews")
+{
+    <h3>Yorumlar</h3>
+    @if (!Model.RecentReviews.Any())
+    {
+        <p>Henüz yorum yok.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var r in Model.RecentReviews)
+            {
+                <li>
+                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@r.PerfumeId">
+                        @r.Perfume.Name
+                    </a> — @r.Rating/5
+                    @if (!string.IsNullOrEmpty(r.Body)) { <em> — @r.Body</em> }
+                </li>
+            }
+        </ul>
+    }
+}
+
+<hr />
+
+@if (Model.TopNotes.Any())
+{
+    <h4>En Sık Kullanılan Notalar</h4>
+    <ul>
+        @foreach (var n in Model.TopNotes)
+        {
+            <li>@n.Name (@n.Count)</li>
+        }
+    </ul>
+}
+
+@if (Model.TopAccords.Any())
+{
+    <h4>En Sık Akorlar</h4>
+    <ul>
+        @foreach (var a in Model.TopAccords)
+        {
+            <li>@a.Name (@a.Count)</li>
+        }
+    </ul>
+}
