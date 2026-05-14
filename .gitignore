@@ -45,7 +45,6 @@ web_parfum_dotnet/obj/
 *.suo
 web_parfum_dotnet/appsettings.Development.json
 
-# Kaggle dataset (parfum CSV)
+# Kaggle dataset (yedek zip ve açılmış klasör — CSV repo'da var)
 archive/
 archive.zip
-web_parfum_dotnet/Data/fra_cleaned.csv
