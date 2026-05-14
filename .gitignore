@@ -48,3 +48,6 @@ web_parfum_dotnet/appsettings.Development.json
 # Kaggle dataset (yedek zip ve açılmış klasör — CSV repo'da var)
 archive/
 archive.zip
+
+# Environment dosyaları (sunucu parolaları)
+.env

@@ -2,16 +2,20 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: web_parfum_db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: web_parfum
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-web_parfum}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Geliştirme için 5432'i lokal makineye expose et. .env'de DB_HOST_PORT=5433 gibi
+    # değiştirebilir veya production'da boş bırakarak (DB_HOST_PORT="") yorumlayabilirsin.
+    # Eğer lokalde başka bir PostgreSQL servisi 5432'i tutuyorsa DB_HOST_PORT=5433 yap.
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d web_parfum"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-web_parfum}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,14 +25,15 @@ services:
       context: ./web_parfum_dotnet
       dockerfile: Dockerfile
     container_name: web_parfum_app
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=web_parfum;Username=postgres;Password=postgres"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-web_parfum};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}"
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
 
 volumes:
   pgdata:
