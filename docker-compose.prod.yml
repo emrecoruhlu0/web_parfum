@@ -1,0 +1,28 @@
+# Production override — mevcut paylaşılan Postgres'i kullanır
+#
+# Kullanım:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Önkoşullar (sunucuda):
+#   - "shared-db" adında external bridge network mevcut
+#   - "postgres" adında çalışan bir Postgres container'ı bu network'te
+#   - .env dosyasında POSTGRES_PASSWORD ve diğer değerler set edilmiş
+
+services:
+  app:
+    build:
+      context: ./web_parfum_dotnet
+      dockerfile: Dockerfile
+    container_name: web_parfum_app
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: "Host=${DB_HOST:-postgres};Port=${DB_PORT:-5432};Database=${POSTGRES_DB:-web_parfum};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}"
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    networks:
+      - shared-db
+
+networks:
+  shared-db:
+    external: true

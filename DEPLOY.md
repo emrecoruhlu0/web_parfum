@@ -1,35 +1,84 @@
 # Deploy Rehberi
 
-Bu döküman web_parfum_dotnet uygulamasını Linux sunucuya **Cloudflare proxy arkasında** deploy etmek içindir.
+Bu döküman web_parfum_dotnet uygulamasını Linux sunucuya **Cloudflare proxy arkasında** ve **mevcut paylaşılan PostgreSQL container'ı** kullanarak deploy etmek içindir.
 
-## Gereksinimler
+## İki kurulum senaryosu
+
+| Senaryo | Compose dosyası | Postgres |
+|---|---|---|
+| **Lokal geliştirme** | `docker-compose.yml` | Yeni container açar |
+| **Production (mevcut shared Postgres)** | `docker-compose.prod.yml` | `shared-db` network'undeki mevcut `postgres` container'ına bağlanır |
+
+## Gereksinimler (Production)
 
 - Sunucuda: Docker + Docker Compose, git
-- Domain'in Cloudflare DNS'inde sunucuya yönlendirilmiş ve turuncu bulut (proxy) açık
-- Cloudflare panelinde SSL/TLS mode: **Flexible** (Cloudflare ↔ ziyaretçi HTTPS, Cloudflare ↔ sunucu HTTP)
+- `shared-db` adında external Docker network mevcut
+- O network'te `postgres` adında çalışan bir Postgres container'ı
+- Domain Cloudflare DNS'inde sunucuya yönlendirilmiş, turuncu bulut (proxy) açık
+- Cloudflare SSL/TLS mode: **Flexible** (Cloudflare ↔ ziyaretçi HTTPS, Cloudflare ↔ sunucu HTTP)
 
-## Hızlı Kurulum
+## Hızlı Kurulum (Production)
+
+### 1. Mevcut Postgres'te yeni bir database aç
+
+App'in mevcut Postgres'in default `postgres` DB'sini kirletmemesi için ayrı bir DB açmak iyi pratiktir:
 
 ```bash
-# 1. Repo'yu klonla
+docker exec -it postgres psql -U postgres -c "CREATE DATABASE web_parfum;"
+```
+
+Eğer kendine ait bir Postgres user da açmak istersen (daha sıkı izolasyon):
+
+```bash
+docker exec -it postgres psql -U postgres <<EOF
+CREATE USER web_parfum_app WITH PASSWORD 'app_user_strong_pw';
+GRANT ALL PRIVILEGES ON DATABASE web_parfum TO web_parfum_app;
+EOF
+```
+
+### 2. Repo'yu klonla ve .env'i hazırla
+
+```bash
 git clone <repo-url>
 cd web_parfum
-
-# 2. Env dosyasını hazırla
 cp .env.example .env
 nano .env
-# POSTGRES_PASSWORD'ü güçlü bir parolayla değiştir
-# APP_PORT'u 80 yapabilirsin (Cloudflare 80 → 443 proxy'ler)
+```
 
-# 3. Çalıştır
-docker compose up -d --build
+`.env`'de en az şunları set et:
 
-# 4. Logları izle (ilk seferinde seed 30-60 saniye sürer)
-docker compose logs -f app
+```env
+# Mevcut postgres container'ındaki parolayı yaz
+POSTGRES_PASSWORD=<mevcut_postgres_parolasi>
+
+# 1. adımda oluşturduğun DB
+POSTGRES_DB=web_parfum
+
+# postgres user'ı (default kullanıyorsan postgres, dedicated açtıysan web_parfum_app)
+POSTGRES_USER=postgres
+
+# App'in dışa açık olduğu port. Cloudflare proxy'lediğinden 80 kullanabilirsin.
+APP_PORT=80
+
+# Postgres container'ının adı (default: postgres)
+DB_HOST=postgres
+```
+
+### 3. Çalıştır
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+İlk seferde build + 24k parfüm seed ~30-60 saniye sürer.
+
+```bash
+# Logları izle
+docker compose -f docker-compose.prod.yml logs -f app
 # "Now listening on: http://[::]:8080" görünce hazır
 ```
 
-Şimdi `https://your-domain.com` üzerinden erişilebilir olmalı.
+Şimdi `https://your-domain.com` erişilebilir.
 
 ## Cloudflare Ayarları
 
@@ -38,71 +87,69 @@ docker compose logs -f app
 - Bulut: **turuncu (proxied)**
 
 ### SSL/TLS
-- Mode: **Flexible** (en kolay, sunucuda SSL gerekmez)
-- Alternatif: **Full** mode + sunucuda Caddy self-signed sertifika (daha güvenli ama karmaşık)
+- Mode: **Flexible**
 
-### Sunucu firewall (UFW örneği)
+### Sunucu firewall
 ```bash
-# Sadece Cloudflare IP'lerinden 80 portuna izin ver (opsiyonel ama önerilen)
-# https://www.cloudflare.com/ips-v4/ adresinden listeyi al
 sudo ufw allow ssh
 sudo ufw allow 80/tcp
 sudo ufw enable
 ```
 
-Daha sıkı: yalnızca Cloudflare IP'lerinden 80'e izin ver (origin'i koruma).
-
-## .env Örnek (Production)
-
-```env
-POSTGRES_PASSWORD=Px9$kL2#mN8@vQ5wR3
-APP_PORT=80
-ASPNETCORE_ENVIRONMENT=Production
-```
-
-`APP_PORT=80`: Cloudflare direkt 80'i proxy'ler. Eğer sunucuda başka web servisi yoksa pratik.
+Daha sıkı: yalnızca Cloudflare IP'lerinden 80'e izin ver (`https://www.cloudflare.com/ips-v4/`).
 
 ## Güncelleme
 
 ```bash
 cd web_parfum
 git pull
-docker compose up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ## Veritabanı Yedeği
 
 ```bash
-# Backup al
-docker exec web_parfum_db pg_dump -U postgres web_parfum > backup_$(date +%F).sql
+# Sadece bizim app'in DB'sini yedekle
+docker exec postgres pg_dump -U postgres web_parfum > backup_$(date +%F).sql
 
 # Geri yükle
-cat backup.sql | docker exec -i web_parfum_db psql -U postgres web_parfum
+cat backup.sql | docker exec -i postgres psql -U postgres web_parfum
 ```
 
 ## Sorun Giderme
 
-**`docker compose up` başarısız:**
+**"network shared-db not found"**: Sunucuda `shared-db` adında external network olduğundan emin ol:
 ```bash
-docker compose logs app    # uygulama logları
-docker compose logs postgres
+docker network ls | grep shared-db
 ```
 
-**"Password authentication failed"**: `.env` dosyasında parolayı set ettin mi? `docker compose down && docker compose up -d` ile yeniden başlat.
-
-**Sayfa açılıyor ama login olamıyorum**: Cloudflare SSL/TLS mode'unu kontrol et. Flexible olmalı (veya Full + sunucuda SSL).
-
-**500 hatası, log'da `redirect loop`**: `Program.cs`'te `UseHttpsRedirection` Production'da kapalı; eğer hala oluyorsa `ASPNETCORE_ENVIRONMENT=Production` env değişkenini kontrol et.
-
-**Veritabanını sıfırla** (DİKKAT — tüm veri silinir):
+**"Password authentication failed"**: `.env`'deki `POSTGRES_PASSWORD` mevcut postgres container'ındaki parola ile aynı mı? Test et:
 ```bash
-docker compose down -v
-docker compose up -d --build
+docker exec -e PGPASSWORD="<env'deki parola>" postgres psql -U postgres -d web_parfum -c "SELECT 1;"
+```
+
+**Sayfa açılıyor ama login olamıyorum**: Cloudflare SSL/TLS mode'unu kontrol et — Flexible olmalı.
+
+**500 hatası, redirect loop**: `Program.cs`'te `UseHttpsRedirection` Production'da kapalı; ama emin olmak için `ASPNETCORE_ENVIRONMENT=Production` env değişkenini doğrula.
+
+**Veritabanını sıfırla** (DİKKAT — sadece web_parfum DB'sini sıfırlar, diğer DB'lere dokunmaz):
+```bash
+docker compose -f docker-compose.prod.yml down
+docker exec postgres psql -U postgres -c "DROP DATABASE web_parfum;"
+docker exec postgres psql -U postgres -c "CREATE DATABASE web_parfum;"
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ## Mimari Notu
 
-- App container: ASP.NET Core MVC, port 8080 (içerde), `${APP_PORT}` (dışarda)
-- DB container: PostgreSQL 17, port 5432 sadece localhost'a expose (`127.0.0.1:5432`)
-- Cloudflare → sunucu `${APP_PORT}` → app container 8080
-- App, `ForwardedHeaders` middleware'i ile Cloudflare'in `X-Forwarded-Proto` header'ını okur, gerçek HTTPS sanır → cookie auth Secure flag'i doğru çalışır.
+```
+[Ziyaretçi] → HTTPS → [Cloudflare] → HTTP → [Sunucu :80] → [web_parfum_app container :8080]
+                                                                     ↓ (shared-db network)
+                                                              [postgres container :5432]
+```
+
+- App container `shared-db` external network'üne join olur
+- App, Postgres'i container adıyla bulur (`Host=postgres`)
+- Postgres dışa expose olmaya gerek yok (sadece Docker internal ağda)
+- App `${APP_PORT}` (default 80) ile dış dünyaya açılır
+- `ForwardedHeaders` middleware Cloudflare'in `X-Forwarded-Proto: https` header'ını okur → cookie auth Secure flag'i doğru kurulur
