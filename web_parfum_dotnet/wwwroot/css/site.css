@@ -326,3 +326,24 @@ body {
 
 /* Utility */
 .min-w-0 { min-width: 0; }
+
+/* Perfume card image */
+.perfume-card-img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+    background: #f8f0e8;
+}
+
+.perfume-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.parfum-card:hover .perfume-card-img {
+    transform: scale(1.04);
+}

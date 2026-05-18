@@ -43,10 +43,17 @@
                             <small class="text-muted ms-auto">@item.CreatedAt.ToString("dd.MM HH:mm")</small>
                         </div>
 
+                        @{ var timelinePh = $"https://placehold.co/56x56/f8e8d0/d97706?text={Uri.EscapeDataString(item.Perfume.Brand?.Length > 0 ? item.Perfume.Brand.Substring(0, Math.Min(2, item.Perfume.Brand.Length)) : "?")}"; }
                         <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@item.Perfume.Id"
-                           class="text-decoration-none">
-                            <span class="fw-medium text-dark">@item.Perfume.Name</span>
-                            <span class="text-muted small ms-1">— @item.Perfume.Brand</span>
+                           class="text-decoration-none d-flex align-items-center gap-2 mt-1">
+                            <img src="@(string.IsNullOrEmpty(item.Perfume.ImageUrl) ? timelinePh : item.Perfume.ImageUrl)"
+                                 alt="@item.Perfume.Name"
+                                 style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #f0ece6;flex-shrink:0;"
+                                 onerror="this.src='@timelinePh'" />
+                            <div>
+                                <span class="fw-medium text-dark">@item.Perfume.Name</span>
+                                <span class="text-muted small ms-1">— @item.Perfume.Brand</span>
+                            </div>
                         </a>
 
                         @if (item.Type == "review")
@@ -121,13 +128,16 @@ else
                 @foreach (var p in Model.FallbackPopular)
                 {
                     <div class="col">
+                        @{ var feedPh = $"https://placehold.co/80x80/f8e8d0/d97706?text={Uri.EscapeDataString(p.Brand?.Length > 0 ? p.Brand.Substring(0, Math.Min(2, p.Brand.Length)) : "?")}"; }
                         <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@p.Id"
                            class="text-decoration-none">
                             <div class="parfum-card p-3 h-100">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="perfume-thumb-sm flex-shrink-0">
-                                        <i class="bi bi-droplet-fill"></i>
-                                    </div>
+                                    <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? feedPh : p.ImageUrl)"
+                                         alt="@p.Name"
+                                         class="flex-shrink-0"
+                                         style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #f0ece6;"
+                                         onerror="this.src='@feedPh'" />
                                     <div>
                                         <div class="fw-medium text-dark">@p.Name</div>
                                         <div class="text-muted small">@p.Brand</div>

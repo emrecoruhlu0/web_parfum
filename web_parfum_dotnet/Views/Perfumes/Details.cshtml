@@ -7,17 +7,14 @@
 <div class="row g-4">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm">
-            @if (!string.IsNullOrEmpty(Model.Perfume.ImageUrl))
-            {
-                <img src="@Model.Perfume.ImageUrl" class="card-img-top" alt="@Model.Perfume.Name" />
+            @{
+                var detailPlaceholder = $"https://placehold.co/400x400/f8e8d0/d97706?text={Uri.EscapeDataString(Model.Perfume.Brand?.Length > 0 ? Model.Perfume.Brand.Substring(0, Math.Min(2, Model.Perfume.Brand.Length)) : "?")}";
             }
-            else
-            {
-                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
-                     style="height:300px;">
-                    <i class="bi bi-droplet-half display-1 text-muted"></i>
-                </div>
-            }
+            <img src="@(string.IsNullOrEmpty(Model.Perfume.ImageUrl) ? detailPlaceholder : Model.Perfume.ImageUrl)"
+                 alt="@Model.Perfume.Name"
+                 class="card-img-top"
+                 style="height:300px; object-fit:cover;"
+                 onerror="this.src='@detailPlaceholder'" />
             <div class="card-body">
                 <h3 class="font-serif mb-1">@Model.Perfume.Name</h3>
                 <p class="text-muted">@Model.Perfume.Brand</p>

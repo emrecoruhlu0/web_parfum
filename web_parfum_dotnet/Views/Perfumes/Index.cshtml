@@ -75,31 +75,37 @@
 <div class="row g-3">
     @foreach (var p in Model.Perfumes)
     {
+        var placeholder = $"https://placehold.co/200x200/f8e8d0/d97706?text={Uri.EscapeDataString(p.Brand?.Length > 0 ? p.Brand.Substring(0, Math.Min(2, p.Brand.Length)) : "?")}";
         <div class="col-sm-6 col-lg-4 col-xl-3">
-            <div class="parfum-card card h-100">
-                <div class="card-body">
-                    <h6 class="font-serif mb-1 text-truncate">@p.Name</h6>
-                    <p class="text-muted small mb-2 text-truncate">@p.Brand</p>
-                    <div class="small text-muted mb-2">
-                        @if (!string.IsNullOrEmpty(p.Accord1))
-                        {
-                            <span class="badge bg-light text-dark border me-1">@p.Accord1</span>
-                        }
-                        @if (!string.IsNullOrEmpty(p.Accord2))
-                        {
-                            <span class="badge bg-light text-dark border me-1">@p.Accord2</span>
-                        }
+            <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none">
+                <div class="parfum-card card h-100">
+                    <div class="perfume-card-img-wrap">
+                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? placeholder : p.ImageUrl)"
+                             alt="@p.Name"
+                             class="perfume-card-img"
+                             onerror="this.src='@placeholder'" />
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-warning text-dark">
-                            <i class="bi bi-star-fill"></i> @(p.RatingValue?.ToString("F1") ?? "-")
-                        </span>
-                        <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary">
-                            Detay
-                        </a>
+                    <div class="card-body pt-2">
+                        <h6 class="font-serif mb-0 text-truncate text-dark">@p.Name</h6>
+                        <p class="text-muted small mb-2 text-truncate">@p.Brand</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                @if (!string.IsNullOrEmpty(p.Accord1))
+                                {
+                                    <span class="badge bg-light text-dark border me-1" style="font-size:.65rem">@p.Accord1</span>
+                                }
+                                @if (!string.IsNullOrEmpty(p.Accord2))
+                                {
+                                    <span class="badge bg-light text-dark border" style="font-size:.65rem">@p.Accord2</span>
+                                }
+                            </div>
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-star-fill"></i> @(p.RatingValue?.ToString("F1") ?? "-")
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     }
 </div>

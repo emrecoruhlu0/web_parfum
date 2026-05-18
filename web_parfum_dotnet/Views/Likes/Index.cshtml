@@ -30,13 +30,15 @@ else
         @foreach (var p in Model)
         {
             <div class="col">
+                @{ var likesPh = $"https://placehold.co/80x80/f8e8d0/d97706?text={Uri.EscapeDataString(p.Brand?.Length > 0 ? p.Brand.Substring(0, Math.Min(2, p.Brand.Length)) : "?")}"; }
                 <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@p.Id"
                    class="text-decoration-none">
                     <div class="parfum-card p-3 h-100 d-flex align-items-center gap-3">
-                        <div class="perfume-thumb flex-shrink-0 d-flex align-items-center justify-content-center"
-                             style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#f8e8d0,#f0d0a8);">
-                            <i class="bi bi-droplet-fill text-amber fs-5"></i>
-                        </div>
+                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? likesPh : p.ImageUrl)"
+                             alt="@p.Name"
+                             class="flex-shrink-0"
+                             style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid #f0ece6;"
+                             onerror="this.src='@likesPh'" />
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-medium text-dark text-truncate">@p.Name</div>
                             <div class="text-muted small">@p.Brand</div>
