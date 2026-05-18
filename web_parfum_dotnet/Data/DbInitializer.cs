@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using WebParfum.Models;
 
 namespace WebParfum.Data;
@@ -11,6 +12,13 @@ public static class DbInitializer
     public static void Initialize(AppDbContext db)
     {
         db.Database.EnsureCreated();
+
+        var needsImageUpdate = db.Perfumes.Any() && !db.Perfumes.Any(p => p.ImageUrl != null);
+        if (needsImageUpdate)
+        {
+            BackfillImageUrls(db);
+            return;
+        }
 
         if (db.Perfumes.Any()) return;
 
@@ -66,6 +74,7 @@ public static class DbInitializer
                 Accord3 = Clean(Get(cols, idx, "mainaccord3")),
                 Accord4 = Clean(Get(cols, idx, "mainaccord4")),
                 Accord5 = Clean(Get(cols, idx, "mainaccord5")),
+                ImageUrl = ExtractImageUrl(Get(cols, idx, "url")),
                 CreatedAt = DateTime.UtcNow,
             });
 
@@ -88,6 +97,64 @@ public static class DbInitializer
         }
 
         Console.WriteLine($"[Seed] Tamamlandı: {total} parfüm eklendi, {skipped} satır atlandı.");
+    }
+
+    private static void BackfillImageUrls(AppDbContext db)
+    {
+        var csvPath = ResolveCsvPath();
+        if (csvPath == null) return;
+
+        Console.WriteLine("[Seed] ImageUrl backfill başlıyor...");
+
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var encoding = Encoding.GetEncoding("ISO-8859-1");
+        using var reader = new StreamReader(csvPath, encoding);
+
+        var headerLine = reader.ReadLine();
+        if (headerLine == null) return;
+
+        var headers = headerLine.Split(';');
+        var idx = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < headers.Length; i++)
+            idx[headers[i].Trim()] = i;
+
+        // name -> imageUrl mapping
+        var urlMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        string? line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            var cols = line.Split(';');
+            if (cols.Length < headers.Length) continue;
+            var name = Clean(Get(cols, idx, "Perfume"));
+            var imgUrl = ExtractImageUrl(Get(cols, idx, "url"));
+            if (name != null && imgUrl != null)
+                urlMap.TryAdd(name, imgUrl);
+        }
+
+        var perfumes = db.Perfumes.Where(p => p.ImageUrl == null).ToList();
+        int updated = 0;
+        foreach (var p in perfumes)
+        {
+            if (urlMap.TryGetValue(p.Name, out var img))
+            {
+                p.ImageUrl = img;
+                updated++;
+            }
+        }
+
+        if (updated > 0)
+        {
+            db.SaveChanges();
+            Console.WriteLine($"[Seed] {updated} parfümün ImageUrl'si güncellendi.");
+        }
+    }
+
+    private static string? ExtractImageUrl(string? fraganticaUrl)
+    {
+        if (string.IsNullOrWhiteSpace(fraganticaUrl)) return null;
+        var m = Regex.Match(fraganticaUrl, @"-(\d+)\.html$");
+        if (!m.Success) return null;
+        return $"https://fimgs.net/mdimg/perfume/375x500.{m.Groups[1].Value}.jpg";
     }
 
     private static string? ResolveCsvPath()
