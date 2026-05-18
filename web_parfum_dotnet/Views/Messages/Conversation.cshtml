@@ -3,53 +3,69 @@
 
 @{
     ViewData["Title"] = $"Mesaj — {Model.OtherUser.Username}";
+    ViewData["ActivePage"] = "Messages";
     var myId = CurrentUser.UserId;
 }
 
-@*
-    TODO arkadaş: Bire bir mesajlaşma sayfası.
-    - Üst: karşı kullanıcının adı + profil linki
-    - Mesaj listesi: her balon kimden gelmiş (sender vs me)
-    - Alt: yeni mesaj formu (textarea + gönder)
-    - Sayfa açıldığında karşıdan gelen mesajlar otomatik okundu işaretleniyor (zaten controller'da)
-
-    Model.OtherUser, Model.Messages (chronological, sender bilgisi message.SenderId)
-*@
-
-<h2>
-    <a asp-controller="Profile" asp-action="View" asp-route-username="@Model.OtherUser.Username">
+<!-- Başlık -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary flex-shrink-0">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="profile-avatar-sm flex-shrink-0">
+        @Model.OtherUser.Username.Substring(0, 1).ToUpper()
+    </div>
+    <a asp-controller="Profile" asp-action="View" asp-route-username="@Model.OtherUser.Username"
+       class="fw-semibold text-decoration-none text-dark">
         @Model.OtherUser.Username
     </a>
-    ile konuşma
-</h2>
+</div>
 
-<p><a asp-action="Index">‹ Tüm mesajlar</a></p>
-
-<hr />
-
-@if (!Model.Messages.Any())
-{
-    <p>Henüz hiç mesaj yok. İlk mesajı sen gönder!</p>
-}
-else
-{
-    <ul>
-        @foreach (var m in Model.Messages)
+<!-- Mesaj Alanı -->
+<div class="parfum-card d-flex flex-column" style="height:calc(100vh - 220px); min-height:400px;">
+    <div class="flex-grow-1 overflow-auto p-3 d-flex flex-column gap-2" id="messageList">
+        @if (!Model.Messages.Any())
         {
-            <li>
-                <strong>@(m.SenderId == myId ? "Sen" : Model.OtherUser.Username):</strong>
-                @m.Body
-                <small>(@m.CreatedAt.ToString("HH:mm dd.MM.yyyy"))</small>
-            </li>
+            <div class="text-center text-muted my-auto py-5">
+                <i class="bi bi-chat-dots" style="font-size:2rem"></i>
+                <p class="mt-2">Henüz hiç mesaj yok. İlk mesajı sen gönder!</p>
+            </div>
         }
-    </ul>
+        else
+        {
+            @foreach (var m in Model.Messages)
+            {
+                var isMine = m.SenderId == myId;
+                <div class="d-flex @(isMine ? "justify-content-end" : "justify-content-start")">
+                    <div class="chat-bubble @(isMine ? "chat-bubble-mine" : "chat-bubble-theirs")">
+                        <div>@m.Body</div>
+                        <div class="chat-time">@m.CreatedAt.ToString("HH:mm")</div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Gönder Formu -->
+    <div class="border-top p-3">
+        <form asp-action="Send" method="post" class="d-flex gap-2">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="username" value="@Model.OtherUser.Username" />
+            <textarea name="body" class="form-control" rows="1" required
+                      placeholder="Mesajını yaz…"
+                      style="resize:none; overflow:hidden;"
+                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.submit();}"></textarea>
+            <button type="submit" class="btn btn-amber flex-shrink-0">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Sayfayı aşağı kaydır
+        var list = document.getElementById('messageList');
+        if (list) list.scrollTop = list.scrollHeight;
+    </script>
 }
-
-<hr />
-
-<form asp-action="Send" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="username" value="@Model.OtherUser.Username" />
-    <textarea name="body" rows="2" required placeholder="Mesajını yaz..."></textarea>
-    <button type="submit">Gönder</button>
-</form>

@@ -2,103 +2,174 @@
 
 @{
     ViewData["Title"] = "Günlük Log";
+    ViewData["ActivePage"] = "DailyLog";
+    var today = DateOnly.FromDateTime(DateTime.Today);
 }
 
-@*
-    TODO arkadaş: Bu sayfa kullanıcının takvim görünümü.
-    - 7 sütunlu (Pzt-Paz) takvim grid'i
-    - Ay başlığı + önceki/sonraki ay navigation
-    - Her hücrede: gün numarası + o gün eklenen parfümler
-    - Hücreye tıklayınca / yanına buton: o tarihe yeni log ekleme formu (modal veya inline)
-    - Form alanları: date (gizli), perfumeId (autocomplete/dropdown), sprays (number), note (textarea)
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="font-serif fs-3 mb-0">Günlük Log</h1>
+    <button class="btn btn-amber btn-sm" data-bs-toggle="modal" data-bs-target="#addLogModal">
+        <i class="bi bi-plus-lg me-1"></i> Log Ekle
+    </button>
+</div>
 
-    Model alanları:
-      Model.Year, Model.Month     -> aktif ay
-      Model.MonthName             -> "Mayıs 2026" gibi (tr-TR)
-      Model.DaysInMonth           -> ayın gün sayısı
-      Model.FirstDayOfWeek        -> 1=Pzt .. 7=Paz (ayın 1'inin haftanın hangi günü)
-      Model.LogsByDay             -> Dictionary<int, List<DailyLog>>
-      Model.TotalLogsThisMonth    -> int
-      Model.PrevMonth, NextMonth  -> (Year, Month) tuple
+<!-- Takvim Başlığı -->
+<div class="parfum-card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <a asp-action="Index" asp-route-year="@Model.PrevMonth.Year" asp-route-month="@Model.PrevMonth.Month"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <div class="text-center">
+            <h5 class="font-serif fw-bold mb-0">@Model.MonthName</h5>
+            <small class="text-muted">@Model.TotalLogsThisMonth log girişi</small>
+        </div>
+        <a asp-action="Index" asp-route-year="@Model.NextMonth.Year" asp-route-month="@Model.NextMonth.Month"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
 
-    Backend endpoint'ler:
-      POST /DailyLog/Create  fields: date (DateOnly), perfumeId, sprays, note?
-      POST /DailyLog/Delete  fields: id, year, month
-*@
+    <!-- Takvim Grid -->
+    <div class="calendar-grid">
+        @foreach (var dayName in new[] { "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz" })
+        {
+            <div class="calendar-day-header">@dayName</div>
+        }
 
-<h2>Günlük Log — @Model.MonthName</h2>
-<p>
-    <a asp-action="Index" asp-route-year="@Model.PrevMonth.Year" asp-route-month="@Model.PrevMonth.Month">
-        ‹ Önceki Ay
-    </a>
-    |
-    <a asp-action="Index" asp-route-year="@Model.NextMonth.Year" asp-route-month="@Model.NextMonth.Month">
-        Sonraki Ay ›
-    </a>
-</p>
-<p>Bu ay toplam <strong>@Model.TotalLogsThisMonth</strong> log girişi.</p>
-
-<table border="1" cellpadding="4">
-    <thead>
-        <tr>
-            <th>Pzt</th><th>Sal</th><th>Çar</th><th>Per</th><th>Cum</th><th>Cmt</th><th>Paz</th>
-        </tr>
-    </thead>
-    <tbody>
         @{
             int day = 1;
             int totalCells = Model.FirstDayOfWeek - 1 + Model.DaysInMonth;
             int rows = (int)Math.Ceiling(totalCells / 7.0);
             for (int r = 0; r < rows; r++)
             {
-                <tr>
-                    @for (int c = 1; c <= 7; c++)
+                for (int c = 1; c <= 7; c++)
+                {
+                    int cellIndex = r * 7 + c;
+                    if (cellIndex < Model.FirstDayOfWeek || day > Model.DaysInMonth)
                     {
-                        int cellIndex = r * 7 + c;
-                        if (cellIndex < Model.FirstDayOfWeek || day > Model.DaysInMonth)
-                        {
-                            <td>&nbsp;</td>
-                        }
-                        else
-                        {
-                            <td valign="top">
-                                <strong>@day</strong>
-                                @if (Model.LogsByDay.TryGetValue(day, out var dayLogs))
-                                {
-                                    <ul>
-                                        @foreach (var log in dayLogs)
-                                        {
-                                            <li>
-                                                @log.Perfume.Name
-                                                @if (log.Sprays > 0) { <text>(@log.Sprays sıkım)</text> }
-                                                <form asp-action="Delete" method="post" style="display:inline">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@log.Id" />
-                                                    <input type="hidden" name="year" value="@Model.Year" />
-                                                    <input type="hidden" name="month" value="@Model.Month" />
-                                                    <button type="submit" onclick="return confirm('Sil?');">×</button>
-                                                </form>
-                                            </li>
-                                        }
-                                    </ul>
-                                }
-                                <details>
-                                    <summary>+ Ekle</summary>
-                                    <form asp-action="Create" method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="date" value="@(new DateOnly(Model.Year, Model.Month, day))" />
-                                        <label>Parfüm ID: <input type="number" name="perfumeId" required /></label><br />
-                                        <label>Sıkım: <input type="number" name="sprays" value="2" min="0" /></label><br />
-                                        <label>Not: <input type="text" name="note" /></label><br />
-                                        <button type="submit">Kaydet</button>
-                                    </form>
-                                </details>
-                            </td>
-                            day++;
-                        }
+                        <div class="calendar-cell empty"></div>
                     }
-                </tr>
+                    else
+                    {
+                        var isToday = (today.Year == Model.Year && today.Month == Model.Month && today.Day == day);
+                        var hasLogs = Model.LogsByDay.TryGetValue(day, out var dayLogs);
+                        var currentDay = day;
+                        <div class="calendar-cell @(isToday ? "today" : "") @(hasLogs ? "has-logs" : "")"
+                             onclick="openDayModal(@currentDay)">
+                            <span class="calendar-day-num">@day</span>
+                            @if (hasLogs && dayLogs != null)
+                            {
+                                <div class="calendar-dots">
+                                    @for (int d2 = 0; d2 < Math.Min(dayLogs.Count, 3); d2++)
+                                    {
+                                        <span class="calendar-dot"></span>
+                                    }
+                                    @if (dayLogs.Count > 3)
+                                    {
+                                        <span class="calendar-dot-more">+@(dayLogs.Count - 3)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        day++;
+                    }
+                }
             }
         }
-    </tbody>
-</table>
+    </div>
+</div>
+
+<!-- Log Listesi -->
+@{
+    var allLogs = Model.LogsByDay.Values.SelectMany(l => l).OrderByDescending(l => l.Date).ToList();
+}
+@if (allLogs.Any())
+{
+    <h5 class="fw-semibold mb-3">Bu Ayki Loglar</h5>
+    <div class="d-flex flex-column gap-2">
+        @foreach (var log in allLogs)
+        {
+            <div class="parfum-card p-3 d-flex align-items-center gap-3">
+                <div class="text-center flex-shrink-0" style="min-width:52px">
+                    <div class="fw-bold text-amber" style="font-size:1.1rem">@log.Date.Day</div>
+                    <div class="text-muted" style="font-size:0.7rem">
+                        @log.Date.ToString("MMM", new System.Globalization.CultureInfo("tr-TR")).ToUpper()
+                    </div>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@log.PerfumeId"
+                       class="fw-medium text-decoration-none text-dark">@log.Perfume.Name</a>
+                    <div class="text-muted small">
+                        @if (log.Sprays > 0) { <span class="me-2"><i class="bi bi-droplet me-1"></i>@log.Sprays sıkım</span> }
+                        @if (!string.IsNullOrEmpty(log.Note)) { <em>@log.Note</em> }
+                    </div>
+                </div>
+                <form asp-action="Delete" method="post" class="flex-shrink-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@log.Id" />
+                    <input type="hidden" name="year" value="@Model.Year" />
+                    <input type="hidden" name="month" value="@Model.Month" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Bu logu silmek istiyor musun?')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+}
+
+<!-- Log Ekle Modal -->
+<div class="modal fade" id="addLogModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title font-serif">Log Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Tarih</label>
+                        <input type="date" name="date" class="form-control" id="modalDateInput"
+                               value="@today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Parfüm ID</label>
+                        <input type="number" name="perfumeId" class="form-control" placeholder="Parfüm ID gir" required />
+                        <div class="form-text">
+                            <a asp-controller="Perfumes" asp-action="Index" target="_blank">Parfümleri görüntüle →</a>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Sıkım Sayısı</label>
+                        <input type="number" name="sprays" class="form-control" value="2" min="0" max="20" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Not <span class="text-muted">(opsiyonel)</span></label>
+                        <input type="text" name="note" class="form-control" placeholder="Bugün nasıl hissettirdi?" />
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-amber">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openDayModal(day) {
+            var year = @Model.Year;
+            var month = @Model.Month;
+            var dateStr = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+            document.getElementById('modalDateInput').value = dateStr;
+            var modal = new bootstrap.Modal(document.getElementById('addLogModal'));
+            modal.show();
+        }
+    </script>
+}

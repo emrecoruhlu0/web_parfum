@@ -1,8 +1,52 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Koku. — Parfüm Platformu";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    // Giriş yapmış kullanıcıyı Feed'e yönlendir
+    <script>window.location.href = '@Url.Action("Index", "Feed")';</script>
+}
+else
+{
+    <div class="auth-container">
+        <div class="text-center text-white" style="max-width:560px; padding: 2rem;">
+            <h1 class="font-serif fw-bold mb-2" style="font-size:3.5rem; letter-spacing:-1px;">Koku.</h1>
+            <p class="lead mb-1" style="color: #c0b8d0;">Parfüm dünyasını keşfet, koleksiyonunu yönet,</p>
+            <p class="mb-5" style="color: #c0b8d0;">parfüm severlerle bağlan.</p>
+
+            <div class="d-flex gap-3 justify-content-center flex-wrap mb-5">
+                <a asp-controller="Auth" asp-action="Register" class="btn btn-amber px-4 py-2 fw-semibold">
+                    <i class="bi bi-person-plus me-2"></i>Ücretsiz Kaydol
+                </a>
+                <a asp-controller="Auth" asp-action="Login" class="btn btn-outline-light px-4 py-2">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Giriş Yap
+                </a>
+            </div>
+
+            <div class="row g-3 text-start">
+                <div class="col-md-4">
+                    <div class="p-3 rounded-3" style="background:rgba(255,255,255,0.07)">
+                        <i class="bi bi-collection fs-4 text-amber mb-2 d-block"></i>
+                        <div class="fw-semibold small mb-1">Koleksiyon</div>
+                        <div class="small" style="color:#a0a0b8;">Parfümlerini takip et, şişe doluluk oranını kaydet.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded-3" style="background:rgba(255,255,255,0.07)">
+                        <i class="bi bi-calendar3 fs-4 text-amber mb-2 d-block"></i>
+                        <div class="fw-semibold small mb-1">Günlük Log</div>
+                        <div class="small" style="color:#a0a0b8;">Her gün hangi kokuyu kullandığını not al.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded-3" style="background:rgba(255,255,255,0.07)">
+                        <i class="bi bi-people fs-4 text-amber mb-2 d-block"></i>
+                        <div class="fw-semibold small mb-1">Topluluk</div>
+                        <div class="small" style="color:#a0a0b8;">Parfüm meraklılarıyla tanış, paylaş, keşfet.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

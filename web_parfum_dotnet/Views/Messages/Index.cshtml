@@ -2,42 +2,52 @@
 
 @{
     ViewData["Title"] = "Mesajlar";
+    ViewData["ActivePage"] = "Messages";
 }
 
-@*
-    TODO arkadaş: Mesaj kutusu (conversation listesi).
-    - Her satır: karşı kullanıcı, son mesaj snippet'i, okunmamış sayısı, tarih
-    - Tıklayınca Conversation/{username}'a git
-
-    Model.Conversations:
-      .OtherUser.Username
-      .LastMessage.Body, .CreatedAt, .SenderId (kendi mi gönderdi?)
-      .UnreadCount
-*@
-
-<h2>Mesajlar</h2>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="font-serif fs-3 mb-0">Mesajlar</h1>
+</div>
 
 @if (!Model.Conversations.Any())
 {
-    <p>Henüz konuşma yok.</p>
+    <div class="text-center py-5">
+        <i class="bi bi-chat-dots text-muted" style="font-size:3rem"></i>
+        <h5 class="fw-semibold mt-3">Henüz mesaj yok</h5>
+        <p class="text-muted">Bir kullanıcının profiline giderek mesaj gönderebilirsin.</p>
+        <a asp-controller="Perfumes" asp-action="Index" class="btn btn-amber">
+            <i class="bi bi-search me-1"></i> Kullanıcı Bul
+        </a>
+    </div>
 }
 else
 {
-    <ul>
+    <div class="parfum-card overflow-hidden">
         @foreach (var c in Model.Conversations)
         {
-            <li style="@(c.UnreadCount > 0 ? "font-weight:bold" : "")">
-                <a asp-action="Conversation" asp-route-username="@c.OtherUser.Username">
-                    @c.OtherUser.Username
-                </a>
-                @if (c.UnreadCount > 0)
-                {
-                    <span>(@c.UnreadCount yeni)</span>
-                }
-                <br />
-                <small>@c.LastMessage.Body</small>
-                <small>— @c.LastMessage.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
-            </li>
+            <a asp-action="Conversation" asp-route-username="@c.OtherUser.Username"
+               class="conversation-row d-flex align-items-center gap-3 p-3 text-decoration-none @(c.UnreadCount > 0 ? "unread" : "")">
+                <div class="profile-avatar-sm flex-shrink-0">
+                    @c.OtherUser.Username.Substring(0, 1).ToUpper()
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="fw-semibold text-dark @(c.UnreadCount > 0 ? "" : "fw-medium")">
+                            @c.OtherUser.Username
+                        </span>
+                        <small class="text-muted flex-shrink-0">
+                            @c.LastMessage.CreatedAt.ToString("dd.MM HH:mm")
+                        </small>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="text-muted small text-truncate">@c.LastMessage.Body</span>
+                        @if (c.UnreadCount > 0)
+                        {
+                            <span class="badge bg-amber rounded-pill flex-shrink-0">@c.UnreadCount</span>
+                        }
+                    </div>
+                </div>
+            </a>
         }
-    </ul>
+    </div>
 }

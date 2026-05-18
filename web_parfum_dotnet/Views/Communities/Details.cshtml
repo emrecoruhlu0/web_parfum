@@ -2,109 +2,156 @@
 
 @{
     ViewData["Title"] = Model.Community.Name;
+    ViewData["ActivePage"] = "Communities";
 }
 
-@*
-    TODO arkadaş: Topluluk detay sayfası.
-    - Üst: topluluk adı, açıklama, üye sayısı, kurucu
-    - Buton: "Katıl" / "Ayrıl" (owner için disabled)
-    - Sekmeler veya iki bölüm: Postlar, Üyeler
-    - Post formu (üye değilse gizle): textarea + opsiyonel parfümId
-
-    Model:
-      .Community (Name, Description, Owner, CreatedAt)
-      .MemberCount, .IsMember, .IsOwner
-      .Members -> List<CommunityMember> (User dahil)
-      .Posts -> List<CommunityPost> (User + Perfume dahil)
-*@
-
-<h2>@Model.Community.Name</h2>
-
-@if (!string.IsNullOrEmpty(Model.Community.Description))
-{
-    <p>@Model.Community.Description</p>
-}
-
-<p>
-    <strong>@Model.MemberCount</strong> üye |
-    Kurucu: @Model.Community.Owner.Username
-    @if (Model.IsOwner) { <em>(sen)</em> }
-</p>
-
-@if (!Model.IsOwner)
-{
-    <form asp-action="JoinToggle" method="post" style="display:inline">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Community.Id" />
-        <button type="submit">@(Model.IsMember ? "Ayrıl" : "Katıl")</button>
-    </form>
-}
-
-<hr />
-
-<h3>Gönderiler (@Model.Posts.Count)</h3>
-
-@if (Model.IsMember)
-{
-    <form asp-action="CreatePost" method="post">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Community.Id" />
-        <label>Mesajın:<br />
-            <textarea name="body" rows="2" required></textarea>
-        </label><br />
-        <label>İlgili Parfüm ID (opsiyonel): <input type="number" name="perfumeId" /></label>
-        <button type="submit">Gönder</button>
-    </form>
-}
-else
-{
-    <p><em>Topluluğa katılarak gönderi paylaşabilirsin.</em></p>
-}
-
-@if (!Model.Posts.Any())
-{
-    <p>Henüz gönderi yok.</p>
-}
-else
-{
-    <ul>
-        @foreach (var p in Model.Posts)
-        {
-            <li>
-                <strong>@p.User.Username</strong>
-                <small>(@p.CreatedAt.ToString("dd.MM.yyyy HH:mm"))</small>
-                <p>@p.Body</p>
-                @if (p.Perfume != null)
+<!-- Başlık -->
+<div class="parfum-card p-4 mb-4">
+    <div class="d-flex align-items-start gap-4">
+        <div class="community-avatar-lg flex-shrink-0">
+            @Model.Community.Name.Substring(0, 1).ToUpper()
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div>
+                    <h1 class="font-serif fs-3 mb-1">@Model.Community.Name</h1>
+                    <div class="text-muted small mb-2">
+                        <i class="bi bi-people me-1"></i>@Model.MemberCount üye &nbsp;·&nbsp;
+                        Kurucu: <a asp-controller="Profile" asp-action="View" asp-route-username="@Model.Community.Owner.Username"
+                                   class="text-decoration-none text-muted fw-medium">@Model.Community.Owner.Username</a>
+                        @if (Model.IsOwner) { <span class="text-amber">(sen)</span> }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Community.Description))
+                    {
+                        <p class="text-muted mb-0">@Model.Community.Description</p>
+                    }
+                </div>
+                @if (!Model.IsOwner)
                 {
-                    <p>→ <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@p.Perfume.Id">
-                        @p.Perfume.Name (@p.Perfume.Brand)
-                    </a></p>
-                }
-                @if (p.UserId == ViewData["__CurrentUserId"] as int? || Model.IsOwner)
-                {
-                    <form asp-action="DeletePost" method="post" style="display:inline">
+                    <form asp-action="JoinToggle" method="post" class="flex-shrink-0">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" name="communityId" value="@Model.Community.Id" />
-                        <input type="hidden" name="postId" value="@p.Id" />
-                        <button type="submit" onclick="return confirm('Sil?');">Sil</button>
+                        <input type="hidden" name="id" value="@Model.Community.Id" />
+                        <button type="submit"
+                                class="btn @(Model.IsMember ? "btn-outline-secondary" : "btn-amber")">
+                            <i class="bi @(Model.IsMember ? "bi-box-arrow-left" : "bi-person-plus") me-1"></i>
+                            @(Model.IsMember ? "Ayrıl" : "Katıl")
+                        </button>
                     </form>
                 }
-            </li>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Gönderiler -->
+    <div class="col-lg-8">
+        <h5 class="fw-semibold mb-3">
+            <i class="bi bi-chat-square-text me-2 text-amber"></i>Gönderiler (@Model.Posts.Count)
+        </h5>
+
+        @if (Model.IsMember)
+        {
+            <div class="parfum-card p-3 mb-3">
+                <form asp-action="CreatePost" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Community.Id" />
+                    <textarea name="body" class="form-control border-0 p-0 mb-2" rows="2"
+                              placeholder="Topluluğa bir şeyler paylaş…" required
+                              style="resize:none; background:transparent; box-shadow:none;"></textarea>
+                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <select name="perfumeId" class="form-select form-select-sm w-auto border-0 text-muted"
+                                style="background:transparent;">
+                            <option value="">İlgili parfüm (opsiyonel)</option>
+                        </select>
+                        <button type="submit" class="btn btn-amber btn-sm">
+                            <i class="bi bi-send me-1"></i> Gönder
+                        </button>
+                    </div>
+                </form>
+            </div>
         }
-    </ul>
-}
+        else
+        {
+            <div class="alert alert-light border mb-3">
+                <i class="bi bi-info-circle me-2 text-muted"></i>
+                Gönderi paylaşmak için topluluğa katıl.
+            </div>
+        }
 
-<hr />
+        @if (!Model.Posts.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-chat-square text-muted" style="font-size:2.5rem"></i>
+                <p class="text-muted mt-2">Henüz gönderi yok. İlk sen paylaş!</p>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var p in Model.Posts)
+                {
+                    <div class="parfum-card p-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="profile-avatar-sm flex-shrink-0">
+                                @p.User.Username.Substring(0, 1).ToUpper()
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <a asp-controller="Profile" asp-action="View" asp-route-username="@p.User.Username"
+                                       class="fw-semibold text-decoration-none text-dark small">@p.User.Username</a>
+                                    <small class="text-muted">@p.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                                <p class="mb-1">@p.Body</p>
+                                @if (p.Perfume != null)
+                                {
+                                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@p.Perfume.Id"
+                                       class="badge bg-amber-soft text-amber text-decoration-none">
+                                        <i class="bi bi-droplet me-1"></i>@p.Perfume.Name
+                                    </a>
+                                }
+                            </div>
+                            @if (p.UserId == ViewData["__CurrentUserId"] as int? || Model.IsOwner)
+                            {
+                                <form asp-action="DeletePost" method="post" class="flex-shrink-0">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="communityId" value="@Model.Community.Id" />
+                                    <input type="hidden" name="postId" value="@p.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Gönderiyi sil?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
 
-<h3>Üyeler (@Model.MemberCount)</h3>
-<ul>
-    @foreach (var m in Model.Members)
-    {
-        <li>
-            <a asp-controller="Profile" asp-action="View" asp-route-username="@m.User.Username">
-                @m.User.Username
-            </a>
-            @if (m.Role == "admin") { <em>(admin)</em> }
-        </li>
-    }
-</ul>
+    <!-- Üyeler -->
+    <div class="col-lg-4">
+        <h5 class="fw-semibold mb-3">
+            <i class="bi bi-people me-2 text-amber"></i>Üyeler (@Model.MemberCount)
+        </h5>
+        <div class="parfum-card p-3">
+            <div class="d-flex flex-column gap-2">
+                @foreach (var m in Model.Members)
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="profile-avatar-sm flex-shrink-0" style="width:32px;height:32px;font-size:.8rem">
+                            @m.User.Username.Substring(0, 1).ToUpper()
+                        </div>
+                        <a asp-controller="Profile" asp-action="View" asp-route-username="@m.User.Username"
+                           class="text-decoration-none text-dark small fw-medium">@m.User.Username</a>
+                        @if (m.Role == "admin")
+                        {
+                            <span class="badge bg-amber-soft text-amber ms-auto" style="font-size:.65rem">admin</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

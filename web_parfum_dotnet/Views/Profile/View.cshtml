@@ -2,164 +2,235 @@
 
 @{
     ViewData["Title"] = $"@{Model.User.Username}";
+    ViewData["ActivePage"] = "Profile";
+    var activeSection = Model.Section ?? "collection";
 }
 
-@*
-    TODO arkadaş: Bu sayfa kullanıcı profil sayfası.
-    - Üst kısım: avatar, kullanıcı adı, bio, takipçi/takip sayıları
-    - Buton: kendi profilinse "Düzenle", başkasınınsa "Takip Et" / "Takip Bırak"
-    - Sekmeler: Koleksiyon / Günlük Loglar / Yorumlar
-    - Sağ veya alt: TopNotes ve TopAccords (kullanıcının log'larına göre en sık kokuları)
-
-    Mevcut model alanları:
-      Model.User                  -> Username, Email, Bio?, Avatar?, CreatedAt
-      Model.IsOwnProfile          -> bool
-      Model.IsFollowing           -> bool (başkasının profilinde)
-      Model.FollowersCount        -> int
-      Model.FollowingCount        -> int
-      Model.ReviewsCount          -> int
-      Model.CollectionCount       -> int
-      Model.DailyLogCount         -> int
-      Model.Section               -> "collection" | "logs" | "reviews"
-      Model.CollectionItems       -> List<Collection> (section=collection iken dolu)
-      Model.RecentLogs            -> List<DailyLog> (section=logs iken dolu)
-      Model.RecentReviews         -> List<Review> (section=reviews iken dolu)
-      Model.TopNotes              -> List<NoteFreq> (Name, Count)
-      Model.TopAccords            -> List<NoteFreq>
-*@
-
-<h2>@Model.User.Username</h2>
-@if (!string.IsNullOrEmpty(Model.User.Bio))
-{
-    <p>@Model.User.Bio</p>
-}
-
-<p>
-    <strong>@Model.FollowersCount</strong> takipçi |
-    <strong>@Model.FollowingCount</strong> takip |
-    <strong>@Model.CollectionCount</strong> koleksiyon |
-    <strong>@Model.ReviewsCount</strong> yorum |
-    <strong>@Model.DailyLogCount</strong> günlük log
-</p>
-
-@if (Model.IsOwnProfile)
-{
-    <p><em>(Kendi profilin)</em></p>
-}
-else if (User.Identity?.IsAuthenticated == true)
-{
-    <form asp-controller="Follows" asp-action="Toggle" method="post" style="display:inline">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="username" value="@Model.User.Username" />
-        <button type="submit">@(Model.IsFollowing ? "Takibi Bırak" : "Takip Et")</button>
-    </form>
-}
-
-<hr />
-
-<nav>
-    <a asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="collection">
-        Koleksiyon (@Model.CollectionCount)
-    </a> |
-    <a asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="logs">
-        Günlükler (@Model.DailyLogCount)
-    </a> |
-    <a asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="reviews">
-        Yorumlar (@Model.ReviewsCount)
-    </a>
-</nav>
-
-<hr />
-
-@if (Model.Section == "collection")
-{
-    <h3>Koleksiyon</h3>
-    @if (!Model.CollectionItems.Any())
-    {
-        <p>Henüz parfüm yok.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var c in Model.CollectionItems)
+<div class="row g-4">
+    <!-- Sol: Profil Kartı -->
+    <div class="col-lg-3">
+        <div class="parfum-card p-4 text-center mb-3">
+            <div class="profile-avatar-lg mx-auto mb-3">
+                @Model.User.Username.Substring(0, 1).ToUpper()
+            </div>
+            <h5 class="fw-bold mb-0">@Model.User.Username</h5>
+            @if (!string.IsNullOrEmpty(Model.User.Bio))
             {
-                <li>
-                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@c.PerfumeId">
-                        @c.Perfume.Name — @c.Perfume.Brand
-                    </a>
-                    (@c.Status@(c.Status == "owned" ? $", %{c.BottleLevel}" : ""))
-                </li>
+                <p class="text-muted small mt-2 mb-3">@Model.User.Bio</p>
             }
-        </ul>
-    }
-}
-else if (Model.Section == "logs")
-{
-    <h3>Günlük Loglar</h3>
-    @if (!Model.RecentLogs.Any())
-    {
-        <p>Henüz günlük log yok.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var d in Model.RecentLogs)
+            else
             {
-                <li>
-                    @d.Date.ToString("dd.MM.yyyy") —
-                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@d.PerfumeId">
-                        @d.Perfume.Name
-                    </a>
-                    @if (d.Sprays > 0) { <text>(@d.Sprays sıkım)</text> }
-                    @if (!string.IsNullOrEmpty(d.Note)) { <em> — @d.Note</em> }
-                </li>
+                <p class="text-muted small mt-2 mb-3 fst-italic">Henüz bio eklenmemiş.</p>
             }
-        </ul>
-    }
-}
-else if (Model.Section == "reviews")
-{
-    <h3>Yorumlar</h3>
-    @if (!Model.RecentReviews.Any())
-    {
-        <p>Henüz yorum yok.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var r in Model.RecentReviews)
+
+            @if (Model.IsOwnProfile)
             {
-                <li>
-                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@r.PerfumeId">
-                        @r.Perfume.Name
-                    </a> — @r.Rating/5
-                    @if (!string.IsNullOrEmpty(r.Body)) { <em> — @r.Body</em> }
-                </li>
+                <span class="badge bg-amber-soft text-amber mb-2">
+                    <i class="bi bi-person-check me-1"></i> Kendi Profilin
+                </span>
             }
-        </ul>
-    }
-}
+            else if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-controller="Follows" asp-action="Toggle" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="username" value="@Model.User.Username" />
+                    <button type="submit"
+                            class="btn btn-sm w-100 @(Model.IsFollowing ? "btn-outline-secondary" : "btn-amber")">
+                        <i class="bi @(Model.IsFollowing ? "bi-person-dash" : "bi-person-plus") me-1"></i>
+                        @(Model.IsFollowing ? "Takibi Bırak" : "Takip Et")
+                    </button>
+                </form>
+            }
+        </div>
 
-<hr />
+        <div class="parfum-card p-3 mb-3">
+            <div class="row text-center g-0">
+                <div class="col-6 border-end py-2">
+                    <div class="fw-bold fs-5">@Model.FollowersCount</div>
+                    <div class="text-muted small">Takipçi</div>
+                </div>
+                <div class="col-6 py-2">
+                    <div class="fw-bold fs-5">@Model.FollowingCount</div>
+                    <div class="text-muted small">Takip</div>
+                </div>
+            </div>
+        </div>
 
-@if (Model.TopNotes.Any())
-{
-    <h4>En Sık Kullanılan Notalar</h4>
-    <ul>
-        @foreach (var n in Model.TopNotes)
+        <div class="parfum-card p-3">
+            <div class="d-flex flex-column gap-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="bi bi-collection me-2"></i>Koleksiyon</span>
+                    <span class="badge bg-light text-dark">@Model.CollectionCount</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="bi bi-chat-left-text me-2"></i>Yorumlar</span>
+                    <span class="badge bg-light text-dark">@Model.ReviewsCount</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="bi bi-calendar3 me-2"></i>Günlük Log</span>
+                    <span class="badge bg-light text-dark">@Model.DailyLogCount</span>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.TopNotes.Any() || Model.TopAccords.Any())
         {
-            <li>@n.Name (@n.Count)</li>
+            <div class="parfum-card p-3 mt-3">
+                @if (Model.TopNotes.Any())
+                {
+                    <h6 class="fw-semibold mb-2 small text-uppercase text-muted">En Sık Notalar</h6>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        @foreach (var n in Model.TopNotes)
+                        {
+                            <span class="badge bg-amber-soft text-amber">@n.Name</span>
+                        }
+                    </div>
+                }
+                @if (Model.TopAccords.Any())
+                {
+                    <h6 class="fw-semibold mb-2 small text-uppercase text-muted">En Sık Akorlar</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var a in Model.TopAccords)
+                        {
+                            <span class="badge bg-light text-dark">@a.Name</span>
+                        }
+                    </div>
+                }
+            </div>
         }
-    </ul>
-}
+    </div>
 
-@if (Model.TopAccords.Any())
-{
-    <h4>En Sık Akorlar</h4>
-    <ul>
-        @foreach (var a in Model.TopAccords)
+    <!-- Sağ: İçerik -->
+    <div class="col-lg-9">
+        <!-- Sekmeler -->
+        <div class="parfum-card mb-3">
+            <nav class="nav nav-pills p-2 gap-1">
+                <a class="nav-link @(activeSection == "collection" ? "active-tab" : "text-muted")"
+                   asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="collection">
+                    <i class="bi bi-collection me-1"></i> Koleksiyon
+                </a>
+                <a class="nav-link @(activeSection == "logs" ? "active-tab" : "text-muted")"
+                   asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="logs">
+                    <i class="bi bi-calendar3 me-1"></i> Günlük Loglar
+                </a>
+                <a class="nav-link @(activeSection == "reviews" ? "active-tab" : "text-muted")"
+                   asp-action="View" asp-route-username="@Model.User.Username" asp-route-section="reviews">
+                    <i class="bi bi-chat-left-text me-1"></i> Yorumlar
+                </a>
+            </nav>
+        </div>
+
+        @if (activeSection == "collection")
         {
-            <li>@a.Name (@a.Count)</li>
+            @if (!Model.CollectionItems.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-collection text-muted" style="font-size:2.5rem"></i>
+                    <p class="text-muted mt-2">Henüz koleksiyonda parfüm yok.</p>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 g-3">
+                    @foreach (var c in Model.CollectionItems)
+                    {
+                        <div class="col">
+                            <div class="parfum-card p-3 d-flex align-items-center gap-3">
+                                <div class="perfume-thumb-sm flex-shrink-0">
+                                    <i class="bi bi-droplet-fill"></i>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@c.PerfumeId"
+                                       class="fw-medium text-decoration-none text-dark d-block text-truncate">
+                                        @c.Perfume.Name
+                                    </a>
+                                    <div class="text-muted small">@c.Perfume.Brand</div>
+                                </div>
+                                <div class="flex-shrink-0 text-end">
+                                    @if (c.Status == "owned")
+                                    {
+                                        <span class="badge bg-success-soft text-success">Sahip</span>
+                                        @if (c.BottleLevel > 0)
+                                        {
+                                            <div class="small text-muted mt-1">%@c.BottleLevel</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-muted">@c.Status</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
         }
-    </ul>
-}
+        else if (activeSection == "logs")
+        {
+            @if (!Model.RecentLogs.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar3 text-muted" style="font-size:2.5rem"></i>
+                    <p class="text-muted mt-2">Henüz günlük log yok.</p>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var d in Model.RecentLogs)
+                    {
+                        <div class="parfum-card p-3 d-flex align-items-center gap-3">
+                            <div class="text-center flex-shrink-0" style="min-width:52px">
+                                <div class="fw-bold text-amber" style="font-size:1.1rem">@d.Date.Day</div>
+                                <div class="text-muted" style="font-size:0.7rem">@d.Date.ToString("MMM", new System.Globalization.CultureInfo("tr-TR")).ToUpper()</div>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@d.PerfumeId"
+                                   class="fw-medium text-decoration-none text-dark">@d.Perfume.Name</a>
+                                <div class="text-muted small">
+                                    @if (d.Sprays > 0) { <span class="me-2"><i class="bi bi-droplet me-1"></i>@d.Sprays sıkım</span> }
+                                    @if (!string.IsNullOrEmpty(d.Note)) { <em>@d.Note</em> }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else if (activeSection == "reviews")
+        {
+            @if (!Model.RecentReviews.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-chat-left-text text-muted" style="font-size:2.5rem"></i>
+                    <p class="text-muted mt-2">Henüz yorum yok.</p>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var r in Model.RecentReviews)
+                    {
+                        <div class="parfum-card p-3">
+                            <div class="d-flex align-items-start justify-content-between gap-2">
+                                <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@r.PerfumeId"
+                                   class="fw-medium text-decoration-none text-dark">@r.Perfume.Name</a>
+                                <div class="flex-shrink-0">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <i class="bi @(i <= r.Rating ? "bi-star-fill star" : "bi-star star-empty") small"></i>
+                                    }
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(r.Body))
+                            {
+                                <p class="text-muted small mb-0 mt-1 fst-italic">"@r.Body"</p>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

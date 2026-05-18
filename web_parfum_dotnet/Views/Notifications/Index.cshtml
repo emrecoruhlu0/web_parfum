@@ -2,88 +2,135 @@
 
 @{
     ViewData["Title"] = "Bildirimler";
+    ViewData["ActivePage"] = "Notifications";
     var page = (int)(ViewBag.Page ?? 1);
     var hasMore = (bool)(ViewBag.HasMore ?? false);
+    var unreadCount = Model.Count(n => !n.IsRead);
 }
 
-@*
-    TODO arkadaş: Bu sayfa bildirim listesi.
-    - Her satır: actor.Username, tip (like/follow/review/community_invite), tarih
-    - Okunmamış olanlar farklı renkte
-    - Üstte "Tümünü Okundu İşaretle" butonu
-    - Sayfalama (basit ileri/geri)
-
-    Notification.Type değerleri: "like", "follow", "review", "community_invite"
-    Notification.PerfumeId, CommunityId nullable — varsa o sayfaya link verilebilir.
-*@
-
-<h2>Bildirimler</h2>
-
-@if (Model.Any(n => !n.IsRead))
-{
-    <form asp-action="MarkAllRead" method="post" style="display:inline">
-        @Html.AntiForgeryToken()
-        <button type="submit">Tümünü Okundu İşaretle</button>
-    </form>
-}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <h1 class="font-serif fs-3 mb-0">Bildirimler</h1>
+        @if (unreadCount > 0)
+        {
+            <span class="badge bg-danger rounded-pill">@unreadCount</span>
+        }
+    </div>
+    @if (unreadCount > 0)
+    {
+        <form asp-action="MarkAllRead" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-check-all me-1"></i> Tümünü Okundu İşaretle
+            </button>
+        </form>
+    }
+</div>
 
 @if (!Model.Any())
 {
-    <p>Hiç bildirim yok.</p>
+    <div class="text-center py-5">
+        <i class="bi bi-bell text-muted" style="font-size:3rem"></i>
+        <h5 class="fw-semibold mt-3">Henüz bildirim yok</h5>
+        <p class="text-muted">Takipçiler ve beğeniler burada görünecek.</p>
+    </div>
 }
 else
 {
-    <ul>
+    <div class="parfum-card overflow-hidden">
         @foreach (var n in Model)
         {
-            <li style="@(n.IsRead ? "opacity:.6" : "font-weight:bold")">
-                <strong>@n.Actor.Username</strong>
-                @switch (n.Type)
-                {
-                    case "follow":
-                        <text>seni takip etmeye başladı.</text>
-                        break;
-                    case "like":
-                        <text>bir parfümünü beğendi.</text>
-                        break;
-                    case "review":
-                        <text>sahip olduğun bir parfüme yorum yazdı.</text>
-                        break;
-                    case "community_invite":
-                        <text>seni bir topluluğa davet etti.</text>
-                        break;
-                    default:
-                        <text>(@n.Type)</text>
-                        break;
-                }
+            <div class="notification-item d-flex align-items-start gap-3 p-3 @(!n.IsRead ? "unread" : "")">
+                <div class="notification-icon flex-shrink-0">
+                    @switch (n.Type)
+                    {
+                        case "follow":
+                            <i class="bi bi-person-plus-fill text-amber"></i>
+                            break;
+                        case "like":
+                            <i class="bi bi-heart-fill text-danger"></i>
+                            break;
+                        case "review":
+                            <i class="bi bi-star-fill text-warning"></i>
+                            break;
+                        case "community_invite":
+                            <i class="bi bi-people-fill text-amber"></i>
+                            break;
+                        default:
+                            <i class="bi bi-bell-fill text-muted"></i>
+                            break;
+                    }
+                </div>
 
-                @if (n.PerfumeId.HasValue)
-                {
-                    <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@n.PerfumeId">→ Parfüm</a>
-                }
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-start justify-content-between gap-2">
+                        <div>
+                            <span class="fw-semibold small">@n.Actor.Username</span>
+                            <span class="small text-muted ms-1">
+                                @switch (n.Type)
+                                {
+                                    case "follow":
+                                        <text>seni takip etmeye başladı.</text>
+                                        break;
+                                    case "like":
+                                        <text>bir parfümünü beğendi.</text>
+                                        break;
+                                    case "review":
+                                        <text>sahip olduğun bir parfüme yorum yazdı.</text>
+                                        break;
+                                    case "community_invite":
+                                        <text>seni bir topluluğa davet etti.</text>
+                                        break;
+                                    default:
+                                        <text>(@n.Type)</text>
+                                        break;
+                                }
+                            </span>
+                            @if (n.PerfumeId.HasValue)
+                            {
+                                <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@n.PerfumeId"
+                                   class="badge bg-amber-soft text-amber text-decoration-none ms-1 small">
+                                    <i class="bi bi-droplet me-1"></i>Parfüme Git
+                                </a>
+                            }
+                        </div>
+                        <small class="text-muted flex-shrink-0 small">
+                            @n.CreatedAt.ToString("dd.MM HH:mm")
+                        </small>
+                    </div>
 
-                <small>@n.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
-
-                @if (!n.IsRead)
-                {
-                    <form asp-action="MarkRead" method="post" style="display:inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@n.Id" />
-                        <button type="submit">Okundu</button>
-                    </form>
-                }
-            </li>
+                    @if (!n.IsRead)
+                    {
+                        <form asp-action="MarkRead" method="post" class="d-inline mt-1">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@n.Id" />
+                            <button type="submit" class="btn btn-link btn-sm p-0 text-muted" style="font-size:.75rem">
+                                Okundu işaretle
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
         }
-    </ul>
-}
+    </div>
 
-<nav>
-    @if (page > 1)
+    @if (page > 1 || hasMore)
     {
-        <a asp-action="Index" asp-route-page="@(page - 1)">‹ Önceki</a>
+        <div class="d-flex justify-content-between mt-3">
+            @if (page > 1)
+            {
+                <a asp-action="Index" asp-route-page="@(page - 1)" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-chevron-left me-1"></i> Önceki
+                </a>
+            }
+            else { <div></div> }
+
+            @if (hasMore)
+            {
+                <a asp-action="Index" asp-route-page="@(page + 1)" class="btn btn-outline-secondary btn-sm">
+                    Sonraki <i class="bi bi-chevron-right ms-1"></i>
+                </a>
+            }
+        </div>
     }
-    @if (hasMore)
-    {
-        <a asp-action="Index" asp-route-page="@(page + 1)">Sonraki ›</a>
-    }
-</nav>
+}
