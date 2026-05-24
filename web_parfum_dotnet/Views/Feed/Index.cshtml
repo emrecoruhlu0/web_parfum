@@ -5,11 +5,29 @@
     ViewData["ActivePage"] = "Feed";
 }
 
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
     <h1 class="font-serif fs-3 mb-0">Ana Akış</h1>
-    <a asp-controller="Perfumes" asp-action="Index" class="btn btn-amber btn-sm">
-        <i class="bi bi-search me-1"></i> Yeni Parfüm Keşfet
-    </a>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-amber btn-sm" data-bs-toggle="modal" data-bs-target="#sharePostModal">
+            <i class="bi bi-plus-lg me-1"></i> Paylaş
+        </button>
+        <a asp-controller="Perfumes" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-search me-1"></i> Keşfet
+        </a>
+    </div>
+</div>
+
+<!-- Hızlı paylaşım kartı -->
+<div class="parfum-card p-3 mb-4 d-flex align-items-center gap-3">
+    <div class="profile-avatar-sm flex-shrink-0">
+        @User.Identity?.Name?.Substring(0, 1).ToUpper()
+    </div>
+    <button type="button" class="btn btn-light w-100 text-start text-muted rounded-pill"
+            style="background:#faf3e9; border:1px solid #f0e2cf;"
+            data-bs-toggle="modal" data-bs-target="#sharePostModal">
+        <i class="bi bi-droplet me-2 text-amber"></i>
+        Bugün hangi parfümü denedin? Paylaş…
+    </button>
 </div>
 
 @if (Model.Items.Any())
@@ -34,6 +52,19 @@
                                     <i class="bi bi-star-fill me-1"></i>Yorum
                                 </span>
                             }
+                            else if (item.Type == "community")
+                            {
+                                <span class="badge bg-info-subtle text-info">
+                                    <i class="bi bi-people-fill me-1"></i>Topluluk
+                                </span>
+                                @if (item.Community != null)
+                                {
+                                    <a asp-controller="Communities" asp-action="Details" asp-route-id="@item.Community.Id"
+                                       class="small text-decoration-none text-muted">
+                                        @item.Community.Name
+                                    </a>
+                                }
+                            }
                             else
                             {
                                 <span class="badge bg-light text-muted">
@@ -43,18 +74,26 @@
                             <small class="text-muted ms-auto">@item.CreatedAt.ToString("dd.MM HH:mm")</small>
                         </div>
 
-                        @{ var timelinePh = $"https://placehold.co/56x56/f8e8d0/d97706?text={Uri.EscapeDataString(item.Perfume.Brand?.Length > 0 ? item.Perfume.Brand.Substring(0, Math.Min(2, item.Perfume.Brand.Length)) : "?")}"; }
-                        <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@item.Perfume.Id"
-                           class="text-decoration-none d-flex align-items-center gap-2 mt-1">
-                            <img src="@(string.IsNullOrEmpty(item.Perfume.ImageUrl) ? timelinePh : item.Perfume.ImageUrl)"
-                                 alt="@item.Perfume.Name"
-                                 style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #f0ece6;flex-shrink:0;"
-                                 onerror="this.src='@timelinePh'" />
-                            <div>
-                                <span class="fw-medium text-dark">@item.Perfume.Name</span>
-                                <span class="text-muted small ms-1">— @item.Perfume.Brand</span>
-                            </div>
-                        </a>
+                        @if (item.Type == "community" && !string.IsNullOrEmpty(item.Body))
+                        {
+                            <p class="mb-2 mt-1">@item.Body</p>
+                        }
+
+                        @if (item.Perfume != null)
+                        {
+                            var timelinePh = $"https://placehold.co/56x56/f8e8d0/d97706?text={Uri.EscapeDataString(item.Perfume.Brand?.Length > 0 ? item.Perfume.Brand.Substring(0, Math.Min(2, item.Perfume.Brand.Length)) : "?")}";
+                            <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@item.Perfume.Id"
+                               class="text-decoration-none d-flex align-items-center gap-2 mt-1">
+                                <img src="@(string.IsNullOrEmpty(item.Perfume.ImageUrl) ? timelinePh : item.Perfume.ImageUrl)"
+                                     alt="@item.Perfume.Name"
+                                     style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #f0ece6;flex-shrink:0;"
+                                     onerror="this.src='@timelinePh'" />
+                                <div>
+                                    <span class="fw-medium text-dark">@item.Perfume.Name</span>
+                                    <span class="text-muted small ms-1">— @item.Perfume.Brand</span>
+                                </div>
+                            </a>
+                        }
 
                         @if (item.Type == "review")
                         {
@@ -69,7 +108,7 @@
                                 <p class="text-muted small mt-1 mb-0 fst-italic">"@item.Body"</p>
                             }
                         }
-                        else
+                        else if (item.Type == "log")
                         {
                             <div class="text-muted small mt-1">
                                 @if (item.Sprays > 0)
@@ -156,4 +195,140 @@ else
             </div>
         </div>
     }
+}
+
+<!-- Paylaş Modal -->
+<div class="modal fade" id="sharePostModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title font-serif"><i class="bi bi-droplet text-amber me-2"></i>Paylaş</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <!-- Sekme: Yorum / Günlük log -->
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item flex-grow-1">
+                        <button type="button" class="nav-link active w-100" data-bs-toggle="tab"
+                                data-bs-target="#shareReviewTab">
+                            <i class="bi bi-star me-1"></i> Yorum
+                        </button>
+                    </li>
+                    <li class="nav-item flex-grow-1">
+                        <button type="button" class="nav-link w-100" data-bs-toggle="tab"
+                                data-bs-target="#shareLogTab">
+                            <i class="bi bi-calendar3 me-1"></i> Günlük Log
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Yorum -->
+                    <div class="tab-pane fade show active" id="shareReviewTab">
+                        <form asp-controller="Reviews" asp-action="Create" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <label class="form-label fw-medium small">Parfüm</label>
+                            <div class="perfume-autocomplete mb-3">
+                                <span class="perfume-chip-holder"></span>
+                                <input type="text" class="form-control"
+                                       data-perfume-autocomplete data-target="reviewPerfumeId"
+                                       placeholder="Parfüm ara…" autocomplete="off" />
+                                <input type="hidden" name="perfumeId" id="reviewPerfumeId" required />
+                                <div class="perfume-autocomplete-results"></div>
+                            </div>
+
+                            <label class="form-label fw-medium small">Puanın</label>
+                            <div class="mb-3" id="reviewStars" data-rating-input>
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <i class="bi bi-star fs-4 text-amber me-1" data-value="@i" style="cursor:pointer"></i>
+                                }
+                                <input type="hidden" name="rating" id="reviewRating" value="0" required />
+                            </div>
+
+                            <label class="form-label fw-medium small">Yorumun <span class="text-muted">(opsiyonel)</span></label>
+                            <textarea name="body" class="form-control mb-3" rows="3"
+                                      placeholder="Bu parfümü nasıl buldun?"></textarea>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                                <button type="submit" class="btn btn-amber">
+                                    <i class="bi bi-send me-1"></i> Yorumu Paylaş
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Günlük Log -->
+                    <div class="tab-pane fade" id="shareLogTab">
+                        <form asp-controller="DailyLog" asp-action="Create" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <label class="form-label fw-medium small">Parfüm</label>
+                            <div class="perfume-autocomplete mb-3">
+                                <span class="perfume-chip-holder"></span>
+                                <input type="text" class="form-control"
+                                       data-perfume-autocomplete data-target="logPerfumeId"
+                                       placeholder="Parfüm ara…" autocomplete="off" />
+                                <input type="hidden" name="perfumeId" id="logPerfumeId" required />
+                                <div class="perfume-autocomplete-results"></div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-7">
+                                    <label class="form-label fw-medium small">Tarih</label>
+                                    <input type="date" name="date" class="form-control"
+                                           value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label fw-medium small">Sıkım</label>
+                                    <input type="number" name="sprays" class="form-control" value="2" min="0" max="20" />
+                                </div>
+                            </div>
+
+                            <label class="form-label fw-medium small">Not <span class="text-muted">(opsiyonel)</span></label>
+                            <input type="text" name="note" class="form-control mb-3"
+                                   placeholder="Bugün nasıl hissettirdi?" />
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                                <button type="submit" class="btn btn-amber">
+                                    <i class="bi bi-send me-1"></i> Logu Paylaş
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Yıldız rating widget
+        (function () {
+            const wrap = document.getElementById('reviewStars');
+            if (!wrap) return;
+            const input = document.getElementById('reviewRating');
+            const stars = wrap.querySelectorAll('i[data-value]');
+            function paint(val) {
+                stars.forEach(s => {
+                    const v = parseInt(s.dataset.value, 10);
+                    s.classList.toggle('bi-star-fill', v <= val);
+                    s.classList.toggle('bi-star', v > val);
+                });
+            }
+            stars.forEach(s => {
+                s.addEventListener('click', () => {
+                    const v = parseInt(s.dataset.value, 10);
+                    input.value = v;
+                    paint(v);
+                });
+                s.addEventListener('mouseenter', () => paint(parseInt(s.dataset.value, 10)));
+            });
+            wrap.addEventListener('mouseleave', () => paint(parseInt(input.value, 10) || 0));
+        })();
+    </script>
 }

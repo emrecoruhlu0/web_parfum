@@ -18,6 +18,9 @@ public class DailyLogIndexViewModel
 
     public int TotalLogsThisMonth { get; set; }
 
+    /// <summary>Kullanıcının "owned" statüsündeki koleksiyonu — hızlı log için.</summary>
+    public List<Collection> OwnedCollection { get; set; } = [];
+
     // Navigation
     public (int Year, int Month) PrevMonth => Month == 1 ? (Year - 1, 12) : (Year, Month - 1);
     public (int Year, int Month) NextMonth => Month == 12 ? (Year + 1, 1) : (Year, Month + 1);

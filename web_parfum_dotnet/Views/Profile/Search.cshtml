@@ -1,0 +1,84 @@
+@model WebParfum.ViewModels.UserSearchViewModel
+
+@{
+    ViewData["Title"] = "Kullanıcı Bul";
+}
+
+<div class="d-flex align-items-end justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="font-serif mb-1">Kullanıcı Bul</h2>
+        <p class="text-muted mb-0 small">Parfüm meraklılarını keşfet, takip et, mesajlaş.</p>
+    </div>
+</div>
+
+<form method="get" class="filter-card mb-4">
+    <div class="filter-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="@Model.Query"
+               class="filter-search-input"
+               placeholder="Kullanıcı adı ara…"
+               autocomplete="off" autofocus />
+    </div>
+</form>
+
+@if (string.IsNullOrWhiteSpace(Model.Query))
+{
+    <div class="text-center py-5">
+        <i class="bi bi-people text-muted" style="font-size:2.5rem"></i>
+        <p class="text-muted mt-2">Aramak için bir kullanıcı adı yaz.</p>
+    </div>
+}
+else if (!Model.Results.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-person-x text-muted" style="font-size:2.5rem"></i>
+        <p class="text-muted mt-2 mb-0">"@Model.Query" için sonuç yok.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var u in Model.Results)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="parfum-card p-3 d-flex align-items-center gap-3">
+                    <div class="profile-avatar-sm flex-shrink-0">
+                        @u.Username.Substring(0, 1).ToUpper()
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <a asp-action="View" asp-route-username="@u.Username"
+                           class="fw-semibold text-decoration-none text-dark d-block text-truncate">
+                            @u.Username
+                        </a>
+                        @if (!string.IsNullOrEmpty(u.Bio))
+                        {
+                            <div class="text-muted small text-truncate">@u.Bio</div>
+                        }
+                    </div>
+                    <div class="d-flex flex-column gap-1 flex-shrink-0">
+                        @if (u.IsSelf)
+                        {
+                            <span class="badge bg-amber-soft text-amber">Sen</span>
+                        }
+                        else
+                        {
+                            <form asp-controller="Follows" asp-action="Toggle" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="username" value="@u.Username" />
+                                <button type="submit"
+                                        class="btn btn-sm @(u.IsFollowing ? "btn-outline-secondary" : "btn-amber")">
+                                    <i class="bi @(u.IsFollowing ? "bi-person-dash" : "bi-person-plus")"></i>
+                                </button>
+                            </form>
+                            <a asp-controller="Messages" asp-action="Conversation"
+                               asp-route-username="@u.Username"
+                               class="btn btn-sm btn-outline-secondary" title="Mesaj">
+                                <i class="bi bi-chat"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

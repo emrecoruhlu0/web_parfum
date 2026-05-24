@@ -4,10 +4,10 @@ namespace WebParfum.ViewModels;
 
 public class FeedItem
 {
-    public string Type { get; set; } = ""; // "review" | "log"
+    public string Type { get; set; } = ""; // "review" | "log" | "community"
     public DateTime CreatedAt { get; set; }
     public User Actor { get; set; } = null!;
-    public Perfume Perfume { get; set; } = null!;
+    public Perfume? Perfume { get; set; }
 
     // type=review
     public int? Rating { get; set; }
@@ -17,6 +17,9 @@ public class FeedItem
     public DateOnly? LogDate { get; set; }
     public int? Sprays { get; set; }
     public string? Note { get; set; }
+
+    // type=community
+    public Community? Community { get; set; }
 }
 
 public class FeedViewModel

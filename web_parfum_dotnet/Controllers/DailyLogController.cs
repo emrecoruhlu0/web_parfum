@@ -35,6 +35,12 @@ public class DailyLogController(AppDbContext db, ICurrentUserService currentUser
         var firstDow = (int)firstDay.DayOfWeek;
         if (firstDow == 0) firstDow = 7; // Sunday → 7
 
+        var owned = await db.Collections
+            .Where(c => c.UserId == userId && c.Status == "owned")
+            .Include(c => c.Perfume)
+            .OrderByDescending(c => c.UpdatedAt)
+            .ToListAsync();
+
         var vm = new DailyLogIndexViewModel
         {
             Year = y,
@@ -43,6 +49,7 @@ public class DailyLogController(AppDbContext db, ICurrentUserService currentUser
             FirstDayOfWeek = firstDow,
             TotalLogsThisMonth = logs.Count,
             LogsByDay = logs.GroupBy(l => l.Date.Day).ToDictionary(g => g.Key, g => g.ToList()),
+            OwnedCollection = owned,
         };
 
         return View(vm);

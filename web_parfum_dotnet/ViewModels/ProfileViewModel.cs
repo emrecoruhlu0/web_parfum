@@ -15,9 +15,13 @@ public class ProfileViewModel
     public int DailyLogCount { get; set; }
 
     public string Section { get; set; } = "collection"; // collection | logs | reviews
+    public string CollectionStatus { get; set; } = "owned"; // owned | wishlist | tried
 
     // Section-specific data
     public List<Collection> CollectionItems { get; set; } = [];
+    public int OwnedCount { get; set; }
+    public int WishlistCount { get; set; }
+    public int TriedCount { get; set; }
     public List<DailyLog> RecentLogs { get; set; } = [];
     public List<Review> RecentReviews { get; set; } = [];
 

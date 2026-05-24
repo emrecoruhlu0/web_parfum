@@ -10,6 +10,8 @@ public class ProfileController(AppDbContext db, ICurrentUserService currentUser)
 {
     private static readonly HashSet<string> ValidSections = new(StringComparer.OrdinalIgnoreCase)
         { "collection", "logs", "reviews" };
+    private static readonly HashSet<string> ValidCollectionStatuses = new(StringComparer.OrdinalIgnoreCase)
+        { "owned", "wishlist", "tried" };
 
     // /Profile → kendi profilime redirect
     public IActionResult Index()
@@ -20,9 +22,49 @@ public class ProfileController(AppDbContext db, ICurrentUserService currentUser)
         return RedirectToAction(nameof(View), new { username = currentUser.Username });
     }
 
+    // /Profile/Search?q=…  → kullanıcı arama sayfası
+    [HttpGet]
+    public async Task<IActionResult> Search(string? q)
+    {
+        ViewData["ActivePage"] = "Profile";
+
+        var vm = new UserSearchViewModel { Query = q ?? "" };
+        var meId = currentUser.UserId;
+
+        if (!string.IsNullOrWhiteSpace(q) && q.Trim().Length >= 1)
+        {
+            var s = q.Trim();
+            var users = await db.Users
+                .Where(u => EF.Functions.ILike(u.Username, $"%{s}%"))
+                .OrderBy(u => u.Username)
+                .Take(50)
+                .Select(u => new UserSearchResult
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Bio = u.Bio,
+                    IsSelf = meId.HasValue && u.Id == meId.Value,
+                })
+                .ToListAsync();
+
+            if (meId.HasValue)
+            {
+                var followingIds = await db.Follows
+                    .Where(f => f.FollowerId == meId.Value)
+                    .Select(f => f.FollowingId)
+                    .ToListAsync();
+                foreach (var u in users) u.IsFollowing = followingIds.Contains(u.Id);
+            }
+
+            vm.Results = users;
+        }
+
+        return View(vm);
+    }
+
     // /Profile/View/{username}
     [HttpGet("Profile/View/{username}")]
-    public async Task<IActionResult> View(string username, string? section)
+    public async Task<IActionResult> View(string username, string? section, string? collectionStatus)
     {
         ViewData["ActivePage"] = "Profile";
 
@@ -56,8 +98,21 @@ public class ProfileController(AppDbContext db, ICurrentUserService currentUser)
         // Section-specific data
         if (tab == "collection")
         {
-            vm.CollectionItems = await db.Collections
+            var colStatus = (collectionStatus ?? "owned").ToLower();
+            if (!ValidCollectionStatuses.Contains(colStatus)) colStatus = "owned";
+            vm.CollectionStatus = colStatus;
+
+            var counts = await db.Collections
                 .Where(c => c.UserId == user.Id)
+                .GroupBy(c => c.Status)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToListAsync();
+            vm.OwnedCount = counts.FirstOrDefault(c => c.Key == "owned")?.Count ?? 0;
+            vm.WishlistCount = counts.FirstOrDefault(c => c.Key == "wishlist")?.Count ?? 0;
+            vm.TriedCount = counts.FirstOrDefault(c => c.Key == "tried")?.Count ?? 0;
+
+            vm.CollectionItems = await db.Collections
+                .Where(c => c.UserId == user.Id && c.Status == colStatus)
                 .Include(c => c.Perfume)
                 .OrderByDescending(c => c.UpdatedAt)
                 .Take(50)

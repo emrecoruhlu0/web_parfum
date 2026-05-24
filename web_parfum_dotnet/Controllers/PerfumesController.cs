@@ -56,14 +56,12 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
             .Take(filter.PageSize)
             .ToListAsync();
 
-        // Meta facets — sadece ilk sayfada hesapla, performans için
-        if (filter.Page == 1)
+        // Meta facets — chip filtreler her sayfada görünmeli
         {
             var brandRows = await db.Perfumes
                 .GroupBy(p => p.Brand)
                 .Select(g => new { Value = g.Key, Count = g.Count() })
                 .OrderByDescending(x => x.Count)
-                .Take(20)
                 .ToListAsync();
             filter.Brands = brandRows.Select(b => new FacetItem(b.Value, b.Count)).ToList();
 
@@ -86,7 +84,6 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
                 .GroupBy(a => a!)
                 .Select(g => new FacetItem(g.Key, g.Count()))
                 .OrderByDescending(f => f.Count)
-                .Take(20)
                 .ToList();
         }
 
@@ -171,5 +168,33 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
         await db.SaveChangesAsync();
 
         return RedirectToAction(nameof(Details), new { id = perfume.Id });
+    }
+
+    // Autocomplete endpoint — kullanıldığı yerler: DailyLog modal, Community post,
+    // Feed quick share. İsim veya marka eşleştirmesi yapar.
+    [HttpGet]
+    public async Task<IActionResult> Search(string? q, int limit = 10)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 1)
+            return Json(Array.Empty<object>());
+
+        var s = q.Trim();
+        limit = Math.Clamp(limit, 1, 25);
+
+        var results = await db.Perfumes
+            .Where(p => EF.Functions.ILike(p.Name, $"%{s}%") ||
+                        EF.Functions.ILike(p.Brand, $"%{s}%"))
+            .OrderByDescending(p => p.RatingCount ?? 0)
+            .Take(limit)
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                brand = p.Brand,
+                imageUrl = p.ImageUrl,
+            })
+            .ToListAsync();
+
+        return Json(results);
     }
 }

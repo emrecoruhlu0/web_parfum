@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "web_parfum_dotnet", "web_parfum_dotnet", "{434D77AE-1F0C-1B8A-E9DA-C46886228894}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebParfum", "web_parfum_dotnet\WebParfum.csproj", "{CE38C7D3-225A-5343-B8BA-9C29544C2481}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE38C7D3-225A-5343-B8BA-9C29544C2481}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE38C7D3-225A-5343-B8BA-9C29544C2481}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE38C7D3-225A-5343-B8BA-9C29544C2481}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE38C7D3-225A-5343-B8BA-9C29544C2481}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CE38C7D3-225A-5343-B8BA-9C29544C2481} = {434D77AE-1F0C-1B8A-E9DA-C46886228894}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {57C90597-10BC-4E7E-BBB7-19B4AD217BC2}
+	EndGlobalSection
+EndGlobal

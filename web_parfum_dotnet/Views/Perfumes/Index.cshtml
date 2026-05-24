@@ -2,74 +2,213 @@
 
 @{
     ViewData["Title"] = "Keşfet";
+    bool HasActive() =>
+        !string.IsNullOrEmpty(Model.Brand) ||
+        !string.IsNullOrEmpty(Model.Gender) ||
+        !string.IsNullOrEmpty(Model.Accord) ||
+        !string.IsNullOrEmpty(Model.Search);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-2">
     <div>
         <h2 class="font-serif mb-1">Keşfet</h2>
-        <p class="text-muted mb-0">@Model.TotalCount.ToString("N0") parfüm</p>
+        <p class="text-muted mb-0 small">@Model.TotalCount.ToString("N0") parfüm bulundu</p>
     </div>
     @if (User.Identity?.IsAuthenticated == true)
     {
-        <a asp-action="Create" class="btn btn-dark">
-            <i class="bi bi-plus-lg me-1"></i> Yeni Parfüm
+        <a asp-action="Create" class="btn btn-dark btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Yeni Parfüm Ekle
         </a>
     }
 </div>
 
-<form method="get" class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <input type="text" name="Search" value="@Model.Search" class="form-control"
-                       placeholder="İsim veya marka ara..." />
-            </div>
-            <div class="col-md-2">
-                <select name="Brand" class="form-select">
-                    <option value="">Tüm markalar</option>
-                    @foreach (var b in Model.Brands)
-                    {
-                        <option value="@b.Value" selected="@(Model.Brand == b.Value)">
-                            @b.Value (@b.Count)
-                        </option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="Gender" class="form-select">
-                    <option value="">Tüm cinsiyetler</option>
-                    @foreach (var g in Model.Genders)
-                    {
-                        <option value="@g.Value" selected="@(Model.Gender == g.Value)">@g.Value</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="Accord" class="form-select">
-                    <option value="">Tüm akorlar</option>
-                    @foreach (var a in Model.Accords)
-                    {
-                        <option value="@a.Value" selected="@(Model.Accord == a.Value)">
-                            @a.Value (@a.Count)
-                        </option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="Sort" class="form-select">
-                    <option value="popular" selected="@(Model.Sort == "popular")">Popüler</option>
-                    <option value="rating" selected="@(Model.Sort == "rating")">Puan</option>
-                    <option value="newest" selected="@(Model.Sort == "newest")">Yeni</option>
-                </select>
-            </div>
+<form method="get" id="filterForm" class="filter-card">
+    <!-- Üst satır: büyük arama + sıralama -->
+    <div class="d-flex gap-3 align-items-center flex-wrap mb-3">
+        <div class="filter-search-wrap flex-grow-1" style="min-width:260px;">
+            <i class="bi bi-search"></i>
+            <input type="text" name="Search" value="@Model.Search"
+                   class="filter-search-input"
+                   placeholder="Parfüm veya marka ara… (Dior, oud, Sauvage)"
+                   autocomplete="off" />
         </div>
-        <div class="mt-3 d-flex gap-2">
-            <button type="submit" class="btn btn-dark btn-sm">
-                <i class="bi bi-funnel me-1"></i> Filtrele
-            </button>
-            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Temizle</a>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Sırala:</span>
+            <select name="Sort" class="filter-sort-select" onchange="document.getElementById('filterForm').submit();">
+                <option value="popular" selected="@(Model.Sort == "popular")">Popüler</option>
+                <option value="rating" selected="@(Model.Sort == "rating")">Puan</option>
+                <option value="newest" selected="@(Model.Sort == "newest")">Yeni</option>
+            </select>
         </div>
     </div>
+
+    <!-- Hidden: chip filtreler buraya yazıyor -->
+    <input type="hidden" name="Brand" id="filterBrand" value="@Model.Brand" />
+    <input type="hidden" name="Gender" id="filterGender" value="@Model.Gender" />
+    <input type="hidden" name="Accord" id="filterAccord" value="@Model.Accord" />
+
+    @if (Model.Genders.Any())
+    {
+        <div class="mb-3">
+            <div class="filter-section-label">Cinsiyet</div>
+            <div class="filter-chips">
+                @foreach (var g in Model.Genders)
+                {
+                    var (gIcon, gColor) = g.Value.ToLower() switch
+                    {
+                        "men"    => ("bi-gender-male", "#3b82f6"),
+                        "women"  => ("bi-gender-female", "#ec4899"),
+                        "unisex" => ("bi-gender-ambiguous", "#a855f7"),
+                        _        => ("bi-person", "#888")
+                    };
+                    var gActive = Model.Gender == g.Value;
+                    <a href="javascript:void(0)"
+                       class="filter-chip filter-chip-color @(gActive ? "active" : "")"
+                       data-filter="Gender" data-value="@g.Value"
+                       style="@(gActive ? $"background:{gColor};border-color:{gColor};color:#fff" : $"color:{gColor};border-color:{gColor}33")">
+                        <i class="bi @gIcon"></i>
+                        @g.Value <span class="chip-count">@g.Count</span>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @{
+        const int accordVisible = 12;
+        const int brandVisible = 15;
+    }
+
+    @if (Model.Accords.Any())
+    {
+        var accordActiveIdx = !string.IsNullOrEmpty(Model.Accord)
+            ? Model.Accords.FindIndex(a => a.Value == Model.Accord)
+            : -1;
+        var accordExpanded = accordActiveIdx >= accordVisible;
+        <div class="mb-3">
+            <div class="filter-section-label">Akor</div>
+            <div class="filter-chips filter-collapsible @(accordExpanded ? "expanded" : "")"
+                 data-visible="@accordVisible">
+                @for (int i = 0; i < Model.Accords.Count; i++)
+                {
+                    var a = Model.Accords[i];
+                    var st = AccordVisual.Get(a.Value);
+                    var active = Model.Accord == a.Value;
+                    <a href="javascript:void(0)"
+                       class="filter-chip filter-chip-color @(active ? "active" : "") @(i >= accordVisible ? "filter-chip-overflow" : "")"
+                       data-filter="Accord" data-value="@a.Value"
+                       style="@(active ? $"background:{st.Hex};border-color:{st.Hex};color:{st.TextHex}" : $"color:{st.Hex};border-color:{st.Hex}55;background:{st.Hex}10")">
+                        <i class="bi @st.Icon"></i>
+                        @a.Value <span class="chip-count">@a.Count</span>
+                    </a>
+                }
+                @if (Model.Accords.Count > accordVisible)
+                {
+                    <button type="button" class="filter-chip filter-toggle-btn">
+                        <span class="show-more"><i class="bi bi-chevron-down"></i> @(Model.Accords.Count - accordVisible) tane daha</span>
+                        <span class="show-less"><i class="bi bi-chevron-up"></i> Daha az</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.Brands.Any())
+    {
+        <div>
+            <div class="filter-section-label">
+                Marka
+                <span class="text-muted fw-normal" style="text-transform:none;letter-spacing:0">
+                    (@Model.Brands.Count toplam)
+                </span>
+            </div>
+            <div class="brand-dropdown" id="brandDropdown">
+                <button type="button" class="brand-dropdown-trigger" id="brandDropdownToggle">
+                    <i class="bi bi-tag me-2"></i>
+                    @if (string.IsNullOrEmpty(Model.Brand))
+                    {
+                        <span class="text-muted">Marka seç…</span>
+                    }
+                    else
+                    {
+                        <span class="fw-medium text-amber">@Model.Brand</span>
+                        <a href="javascript:void(0)" class="brand-clear ms-2"
+                           data-clear-brand title="Markayı temizle">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </a>
+                    }
+                    <i class="bi bi-chevron-down ms-auto"></i>
+                </button>
+                <div class="brand-dropdown-panel">
+                    <div class="brand-dropdown-search">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="brandSearchInput"
+                               class="form-control form-control-sm"
+                               placeholder="Marka ara…" autocomplete="off" />
+                    </div>
+                    <div class="brand-dropdown-list" id="brandDropdownList">
+                        @foreach (var b in Model.Brands)
+                        {
+                            var active = Model.Brand == b.Value;
+                            <a href="javascript:void(0)"
+                               class="brand-dropdown-item @(active ? "active" : "")"
+                               data-filter="Brand" data-value="@b.Value">
+                                <span class="brand-name">@b.Value</span>
+                                <span class="brand-count">@b.Count</span>
+                                @if (active)
+                                {
+                                    <i class="bi bi-check2 brand-check"></i>
+                                }
+                            </a>
+                        }
+                        <div class="brand-dropdown-empty" id="brandDropdownEmpty">
+                            Sonuç yok
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (HasActive())
+    {
+        <div class="filter-active-bar">
+            <span class="text-muted small fw-medium me-1">
+                <i class="bi bi-funnel-fill text-amber me-1"></i>Aktif:
+            </span>
+            @if (!string.IsNullOrEmpty(Model.Search))
+            {
+                <span class="filter-active-pill">
+                    "@Model.Search"
+                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Search")"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.Brand))
+            {
+                <span class="filter-active-pill">
+                    Marka: @Model.Brand
+                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Brand")"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.Gender))
+            {
+                <span class="filter-active-pill">
+                    @Model.Gender
+                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Gender")"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.Accord))
+            {
+                <span class="filter-active-pill">
+                    Akor: @Model.Accord
+                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Accord")"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            <a asp-action="Index" class="text-muted small text-decoration-none ms-auto">
+                <i class="bi bi-arrow-counterclockwise"></i> Tümünü temizle
+            </a>
+        </div>
+    }
 </form>
 
 <div class="row g-3">
@@ -92,11 +231,17 @@
                             <div>
                                 @if (!string.IsNullOrEmpty(p.Accord1))
                                 {
-                                    <span class="badge bg-light text-dark border me-1" style="font-size:.65rem">@p.Accord1</span>
+                                    var s1 = AccordVisual.Get(p.Accord1);
+                                    <span class="badge border me-1" style="font-size:.65rem;background:@(s1.Hex)20;color:@s1.Hex;border-color:@(s1.Hex)55 !important">
+                                        <i class="bi @s1.Icon me-1"></i>@p.Accord1
+                                    </span>
                                 }
                                 @if (!string.IsNullOrEmpty(p.Accord2))
                                 {
-                                    <span class="badge bg-light text-dark border" style="font-size:.65rem">@p.Accord2</span>
+                                    var s2 = AccordVisual.Get(p.Accord2);
+                                    <span class="badge border" style="font-size:.65rem;background:@(s2.Hex)20;color:@s2.Hex;border-color:@(s2.Hex)55 !important">
+                                        <i class="bi @s2.Icon me-1"></i>@p.Accord2
+                                    </span>
                                 }
                             </div>
                             <span class="badge bg-warning text-dark">
@@ -109,6 +254,17 @@
         </div>
     }
 </div>
+
+@if (!Model.Perfumes.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-search text-muted" style="font-size:2.5rem"></i>
+        <p class="text-muted mt-2 mb-1">Bu kriterlere uyan parfüm bulunamadı.</p>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary mt-2">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Filtreleri temizle
+        </a>
+    </div>
+}
 
 @if (Model.TotalPages > 1)
 {
@@ -152,4 +308,105 @@
             ["Sort"] = Model.Sort,
         };
     }
+
+    Dictionary<string, string?> RouteWithout(string remove)
+    {
+        var r = new Dictionary<string, string?>
+        {
+            ["Search"] = Model.Search,
+            ["Brand"] = Model.Brand,
+            ["Gender"] = Model.Gender,
+            ["Accord"] = Model.Accord,
+            ["Sort"] = Model.Sort,
+        };
+        r[remove] = null;
+        return r;
+    }
+}
+
+@section Scripts {
+    <script>
+        // Chip tıklaması → hidden input'a yaz, formu submit et (toggle davranışı)
+        document.querySelectorAll('[data-filter][data-value]').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                e.preventDefault();
+                const key = chip.dataset.filter;
+                const val = chip.dataset.value;
+                const input = document.getElementById('filter' + key);
+                if (!input) return;
+                // Aynı değere tekrar basılırsa kaldır
+                input.value = (input.value === val) ? '' : val;
+                document.getElementById('filterForm').submit();
+            });
+        });
+
+        // "Daha fazla göster / daha az" toggle (akor satırı için)
+        document.querySelectorAll('.filter-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wrap = btn.closest('.filter-collapsible');
+                if (wrap) wrap.classList.toggle('expanded');
+            });
+        });
+
+        // Marka dropdown: aç/kapa, arama, dış tıkla kapat, X ile temizle
+        (function () {
+            const wrap = document.getElementById('brandDropdown');
+            if (!wrap) return;
+            const toggle = document.getElementById('brandDropdownToggle');
+            const search = document.getElementById('brandSearchInput');
+            const list = document.getElementById('brandDropdownList');
+            const empty = document.getElementById('brandDropdownEmpty');
+
+            toggle.addEventListener('click', (e) => {
+                if (e.target.closest('[data-clear-brand]')) return;
+                wrap.classList.toggle('open');
+                if (wrap.classList.contains('open')) {
+                    setTimeout(() => search.focus(), 50);
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!wrap.contains(e.target)) wrap.classList.remove('open');
+            });
+
+            search.addEventListener('input', () => {
+                const q = search.value.trim().toLowerCase();
+                let visible = 0;
+                list.querySelectorAll('.brand-dropdown-item').forEach(item => {
+                    const name = (item.querySelector('.brand-name')?.textContent || '').toLowerCase();
+                    const match = !q || name.includes(q);
+                    item.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+                empty.style.display = visible === 0 ? 'block' : 'none';
+            });
+
+            search.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') wrap.classList.remove('open');
+            });
+
+            // X butonu — markayı temizle ve formu submit
+            const clearBtn = wrap.querySelector('[data-clear-brand]');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.getElementById('filterBrand').value = '';
+                    document.getElementById('filterForm').submit();
+                });
+            }
+        })();
+
+        // Aramayı Enter ile submit (zaten varsayılan), ama 600ms debounce ile auto-submit de
+        let searchTimer;
+        const searchInput = document.querySelector('input[name="Search"]');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    document.getElementById('filterForm').submit();
+                }, 600);
+            });
+        }
+    </script>
 }

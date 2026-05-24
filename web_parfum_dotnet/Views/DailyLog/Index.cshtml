@@ -55,15 +55,35 @@
                         var isToday = (today.Year == Model.Year && today.Month == Model.Month && today.Day == day);
                         var hasLogs = Model.LogsByDay.TryGetValue(day, out var dayLogs);
                         var currentDay = day;
+                        var primaryStyle = (hasLogs && dayLogs != null && dayLogs.Count > 0)
+                            ? AccordVisual.ForPerfume(
+                                dayLogs[0].Perfume.Accord1,
+                                dayLogs[0].Perfume.Accord2,
+                                dayLogs[0].Perfume.Accord3)
+                            : null;
+                        var cellStyle = primaryStyle != null
+                            ? $"background:{primaryStyle.Hex}18;border-color:{primaryStyle.Hex}55"
+                            : "";
+                        var tooltipText = (hasLogs && dayLogs != null)
+                            ? string.Join(" · ", dayLogs.Select(l => $"{l.Perfume.Name}"))
+                            : null;
                         <div class="calendar-cell @(isToday ? "today" : "") @(hasLogs ? "has-logs" : "")"
-                             onclick="openDayModal(@currentDay)">
+                             onclick="openDayModal(@currentDay)"
+                             style="@cellStyle"
+                             @(tooltipText != null ? $"title=\"{tooltipText}\"" : "")>
                             <span class="calendar-day-num">@day</span>
-                            @if (hasLogs && dayLogs != null)
+                            @if (hasLogs && dayLogs != null && primaryStyle != null)
                             {
+                                <i class="bi @primaryStyle.Icon calendar-cell-icon"
+                                   style="color:@primaryStyle.Hex"></i>
                                 <div class="calendar-dots">
                                     @for (int d2 = 0; d2 < Math.Min(dayLogs.Count, 3); d2++)
                                     {
-                                        <span class="calendar-dot"></span>
+                                        var ds = AccordVisual.ForPerfume(
+                                            dayLogs[d2].Perfume.Accord1,
+                                            dayLogs[d2].Perfume.Accord2,
+                                            dayLogs[d2].Perfume.Accord3);
+                                        <span class="calendar-dot" style="background:@ds.Hex"></span>
                                     }
                                     @if (dayLogs.Count > 3)
                                     {
@@ -80,6 +100,58 @@
     </div>
 </div>
 
+<!-- Sahip Olunan Parfümler — Hızlı Log -->
+@if (Model.OwnedCollection.Any())
+{
+    <div class="d-flex align-items-center justify-content-between mb-3 mt-4">
+        <h5 class="fw-semibold mb-0">
+            <i class="bi bi-check-circle me-2 text-amber"></i>Sahip Olduğun Parfümler
+            <span class="text-muted fw-normal small">(@Model.OwnedCollection.Count)</span>
+        </h5>
+        <small class="text-muted">Hızlıca log eklemek için tıkla</small>
+    </div>
+    <div class="owned-grid mb-4">
+        @foreach (var c in Model.OwnedCollection)
+        {
+            var st = AccordVisual.ForPerfume(c.Perfume.Accord1, c.Perfume.Accord2, c.Perfume.Accord3);
+            var ph = $"https://placehold.co/120x120/f8e8d0/d97706?text={Uri.EscapeDataString(c.Perfume.Brand?.Length > 0 ? c.Perfume.Brand.Substring(0, Math.Min(2, c.Perfume.Brand.Length)) : "?")}";
+            <button type="button" class="owned-card"
+                    data-quick-log
+                    data-id="@c.Perfume.Id"
+                    data-name="@c.Perfume.Name"
+                    data-brand="@c.Perfume.Brand"
+                    data-image="@(string.IsNullOrEmpty(c.Perfume.ImageUrl) ? ph : c.Perfume.ImageUrl)"
+                    style="--accord-color: @st.Hex">
+                <div class="owned-card-img-wrap">
+                    <img src="@(string.IsNullOrEmpty(c.Perfume.ImageUrl) ? ph : c.Perfume.ImageUrl)"
+                         alt="@c.Perfume.Name"
+                         onerror="this.src='@ph'" />
+                    <i class="bi @st.Icon owned-card-icon" style="color:@st.Hex"></i>
+                </div>
+                <div class="owned-card-meta">
+                    <div class="owned-card-name">@c.Perfume.Name</div>
+                    <div class="owned-card-brand">@c.Perfume.Brand</div>
+                </div>
+            </button>
+        }
+    </div>
+}
+
+<!-- Başka parfüm için arama kısayolu -->
+<div class="parfum-card p-3 mb-4 d-flex align-items-center gap-3">
+    <i class="bi bi-search text-amber flex-shrink-0" style="font-size:1.2rem"></i>
+    <div class="flex-grow-1 perfume-autocomplete">
+        <span class="perfume-chip-holder"></span>
+        <input type="text" class="form-control border-0 shadow-none"
+               data-perfume-autocomplete data-target="inlineSearchPerfumeId"
+               placeholder="Sahip olmadığın bir parfüm de mi denedin? Buradan ara…"
+               autocomplete="off"
+               style="background:transparent;" />
+        <input type="hidden" id="inlineSearchPerfumeId" />
+        <div class="perfume-autocomplete-results"></div>
+    </div>
+</div>
+
 <!-- Log Listesi -->
 @{
     var allLogs = Model.LogsByDay.Values.SelectMany(l => l).OrderByDescending(l => l.Date).ToList();
@@ -90,10 +162,13 @@
     <div class="d-flex flex-column gap-2">
         @foreach (var log in allLogs)
         {
-            <div class="parfum-card p-3 d-flex align-items-center gap-3">
-                <div class="text-center flex-shrink-0" style="min-width:52px">
-                    <div class="fw-bold text-amber" style="font-size:1.1rem">@log.Date.Day</div>
-                    <div class="text-muted" style="font-size:0.7rem">
+            var logStyle = AccordVisual.ForPerfume(log.Perfume.Accord1, log.Perfume.Accord2, log.Perfume.Accord3);
+            <div class="parfum-card p-3 d-flex align-items-center gap-3" style="border-left:4px solid @logStyle.Hex">
+                <div class="text-center flex-shrink-0 rounded p-2"
+                     style="min-width:56px;background:@(logStyle.Hex)18;color:@logStyle.Hex">
+                    <i class="bi @logStyle.Icon d-block" style="font-size:1rem"></i>
+                    <div class="fw-bold" style="font-size:1.1rem">@log.Date.Day</div>
+                    <div style="font-size:0.65rem;opacity:.75">
                         @log.Date.ToString("MMM", new System.Globalization.CultureInfo("tr-TR")).ToUpper()
                     </div>
                 </div>
@@ -137,10 +212,18 @@
                                value="@today.ToString("yyyy-MM-dd")" required />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-medium">Parfüm ID</label>
-                        <input type="number" name="perfumeId" class="form-control" placeholder="Parfüm ID gir" required />
+                        <label class="form-label fw-medium">Parfüm</label>
+                        <div class="perfume-autocomplete">
+                            <span class="perfume-chip-holder"></span>
+                            <input type="text" class="form-control"
+                                   data-perfume-autocomplete data-target="perfumeId"
+                                   placeholder="Parfüm ismi veya marka ara…"
+                                   autocomplete="off" />
+                            <input type="hidden" name="perfumeId" id="perfumeId" required />
+                            <div class="perfume-autocomplete-results"></div>
+                        </div>
                         <div class="form-text">
-                            <a asp-controller="Perfumes" asp-action="Index" target="_blank">Parfümleri görüntüle →</a>
+                            En az 1 karakter yaz, listeden seç.
                         </div>
                     </div>
                     <div class="mb-3">
@@ -171,5 +254,81 @@
             var modal = new bootstrap.Modal(document.getElementById('addLogModal'));
             modal.show();
         }
+
+        // Modal'da parfüm seçimini önceden doldur (sahip kartından veya inline arama'dan)
+        function prefillModalPerfume(p) {
+            const hidden = document.getElementById('perfumeId');
+            const input = document.querySelector('#addLogModal input[data-perfume-autocomplete]');
+            const wrap = input?.closest('.perfume-autocomplete');
+            const chipHolder = wrap?.querySelector('.perfume-chip-holder');
+            if (!hidden || !input || !chipHolder) return;
+
+            hidden.value = p.id;
+            input.value = '';
+            chipHolder.innerHTML = '';
+
+            const chip = document.createElement('span');
+            chip.className = 'perfume-chip-selected';
+            const img = p.image || 'https://placehold.co/36x36/f8e8d0/d97706?text=?';
+            chip.innerHTML = `
+                <img src="${img}" alt="" />
+                <span class="pc-text"></span>
+                <button type="button" class="pc-clear" aria-label="Kaldır">&times;</button>`;
+            chip.querySelector('.pc-text').textContent = `${p.name} — ${p.brand || ''}`;
+            chip.querySelector('.pc-clear').addEventListener('click', () => {
+                hidden.value = '';
+                chipHolder.innerHTML = '';
+                input.style.display = '';
+                input.focus();
+            });
+            chipHolder.appendChild(chip);
+        }
+
+        // Sahip parfüm kartları → modal aç + parfüm önceden seçili
+        document.querySelectorAll('[data-quick-log]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                document.getElementById('modalDateInput').value = `${yyyy}-${mm}-${dd}`;
+                prefillModalPerfume({
+                    id: btn.dataset.id,
+                    name: btn.dataset.name,
+                    brand: btn.dataset.brand,
+                    image: btn.dataset.image,
+                });
+                new bootstrap.Modal(document.getElementById('addLogModal')).show();
+            });
+        });
+
+        // Alt inline arama: chip oluştuğu anda yakala → modal'a geçir
+        (function () {
+            const hidden = document.getElementById('inlineSearchPerfumeId');
+            if (!hidden) return;
+            const wrap = hidden.closest('.perfume-autocomplete');
+            const chipHolder = wrap?.querySelector('.perfume-chip-holder');
+            if (!chipHolder) return;
+            const observer = new MutationObserver(() => {
+                const chip = chipHolder.querySelector('.perfume-chip-selected');
+                if (!chip || !hidden.value) return;
+                const img = chip.querySelector('img')?.src;
+                const text = chip.querySelector('.pc-text')?.textContent || '';
+                const parts = text.split(' — ');
+                prefillModalPerfume({
+                    id: hidden.value,
+                    name: parts[0] || '',
+                    brand: parts[1] || '',
+                    image: img,
+                });
+                // Inline aramayı temizle
+                hidden.value = '';
+                chipHolder.innerHTML = '';
+                const inp = wrap.querySelector('input[data-perfume-autocomplete]');
+                if (inp) { inp.value = ''; inp.style.display = ''; }
+                new bootstrap.Modal(document.getElementById('addLogModal')).show();
+            });
+            observer.observe(chipHolder, { childList: true });
+        })();
     </script>
 }

@@ -122,11 +122,41 @@
 
         @if (activeSection == "collection")
         {
+            <div class="mb-3 d-flex justify-content-center">
+                <div class="subtab-buttons">
+                    <a class="subtab-btn @(Model.CollectionStatus == "owned" ? "active" : "")"
+                       asp-action="View" asp-route-username="@Model.User.Username"
+                       asp-route-section="collection" asp-route-collectionStatus="owned">
+                        <i class="bi bi-check-circle me-1"></i>Sahip
+                        <span class="subtab-count">@Model.OwnedCount</span>
+                    </a>
+                    <a class="subtab-btn @(Model.CollectionStatus == "wishlist" ? "active" : "")"
+                       asp-action="View" asp-route-username="@Model.User.Username"
+                       asp-route-section="collection" asp-route-collectionStatus="wishlist">
+                        <i class="bi bi-heart me-1"></i>İstek Listesi
+                        <span class="subtab-count">@Model.WishlistCount</span>
+                    </a>
+                    <a class="subtab-btn @(Model.CollectionStatus == "tried" ? "active" : "")"
+                       asp-action="View" asp-route-username="@Model.User.Username"
+                       asp-route-section="collection" asp-route-collectionStatus="tried">
+                        <i class="bi bi-droplet me-1"></i>Denedim
+                        <span class="subtab-count">@Model.TriedCount</span>
+                    </a>
+                </div>
+            </div>
+
             @if (!Model.CollectionItems.Any())
             {
                 <div class="text-center py-5">
                     <i class="bi bi-collection text-muted" style="font-size:2.5rem"></i>
-                    <p class="text-muted mt-2">Henüz koleksiyonda parfüm yok.</p>
+                    <p class="text-muted mt-2">
+                        @(Model.CollectionStatus switch
+                        {
+                            "wishlist" => "İstek listesinde parfüm yok.",
+                            "tried" => "Denenmiş parfüm yok.",
+                            _ => "Henüz koleksiyonda parfüm yok."
+                        })
+                    </p>
                 </div>
             }
             else
