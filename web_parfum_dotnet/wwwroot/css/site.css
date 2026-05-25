@@ -1072,3 +1072,89 @@ body {
 .subtab-buttons .subtab-btn.active .subtab-count {
     background: rgba(217, 119, 6, 0.12);
 }
+
+/* === Parfüm notaları & akor chip'leri === */
+.note-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.note-row:last-of-type {
+    border-bottom: none;
+}
+
+.note-row-label {
+    flex: 0 0 150px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    padding-top: 0.25rem;
+}
+
+.note-row-label i {
+    font-size: 1.05rem;
+    color: #d97706;
+}
+
+.note-chips {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.note-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    background: color-mix(in srgb, var(--note-color) 14%, #ffffff);
+    color: #3a2f22;
+    border: 1px solid color-mix(in srgb, var(--note-color) 35%, transparent);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.note-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.note-chip i {
+    color: var(--note-color);
+    font-size: 0.95rem;
+}
+
+.accord-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.accord-chip i {
+    font-size: 1rem;
+}
+
+@media (max-width: 576px) {
+    .note-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .note-row-label {
+        flex: 0 0 auto;
+    }
+}

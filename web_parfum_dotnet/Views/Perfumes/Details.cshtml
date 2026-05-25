@@ -1,7 +1,25 @@
 @model WebParfum.ViewModels.PerfumeDetailViewModel
+@using WebParfum.Helpers
 
 @{
     ViewData["Title"] = Model.Perfume.Name;
+}
+
+@functions {
+    string RenderNoteChips(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        var sb = new System.Text.StringBuilder();
+        foreach (var n in NoteVisual.Split(raw))
+        {
+            var s = NoteVisual.Get(n);
+            sb.Append($"<span class=\"note-chip\" style=\"--note-color:{s.Hex}\">")
+              .Append($"<i class=\"bi {s.Icon}\"></i>")
+              .Append($"<span>{System.Net.WebUtility.HtmlEncode(n)}</span>")
+              .Append("</span>");
+        }
+        return sb.ToString();
+    }
 }
 
 <div class="row g-4">
@@ -67,20 +85,32 @@
                             </button>
                         </form>
 
-                        <form asp-controller="Collection" asp-action="Add" method="post">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
-                            <div class="input-group">
-                                <select name="status" class="form-select">
-                                    <option value="owned" selected="@(Model.UserCollectionStatus == "owned")">Sahibim</option>
-                                    <option value="wishlist" selected="@(Model.UserCollectionStatus == "wishlist")">İstek Listem</option>
-                                    <option value="tried" selected="@(Model.UserCollectionStatus == "tried")">Denedim</option>
-                                </select>
-                                <button type="submit" class="btn btn-dark">
-                                    @(Model.UserCollectionStatus != null ? "Güncelle" : "Ekle")
-                                </button>
-                            </div>
-                        </form>
+                        @{
+                            var statusOptions = new[]
+                            {
+                                ("owned",    "Sahibim",       "bi-bag-check"),
+                                ("tried",    "Denedim",       "bi-droplet-half"),
+                                ("wishlist", "İstek Listem",  "bi-bookmark-heart"),
+                            };
+                        }
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var (key, label, icon) in statusOptions)
+                            {
+                                var active = Model.UserCollectionStatuses.Contains(key);
+                                <form asp-controller="Collection" asp-action="Toggle" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
+                                    <input type="hidden" name="status" value="@key" />
+                                    <button type="submit"
+                                            class="btn @(active ? "btn-dark" : "btn-outline-dark") w-100 d-flex align-items-center justify-content-between">
+                                        <span>
+                                            <i class="bi @icon me-1"></i> @label
+                                        </span>
+                                        <span>@(active ? "✓" : "+")</span>
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     </div>
                 }
             </div>
@@ -91,35 +121,54 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <h5 class="font-serif mb-3">Notalar</h5>
+
                 @if (!string.IsNullOrEmpty(Model.Perfume.TopNotes))
                 {
-                    <div class="mb-2">
-                        <strong class="text-muted small">ÜST:</strong> @Model.Perfume.TopNotes
+                    <div class="note-row">
+                        <div class="note-row-label">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            <span>Üst Notalar</span>
+                        </div>
+                        <div class="note-chips">@Html.Raw(RenderNoteChips(Model.Perfume.TopNotes))</div>
                     </div>
                 }
                 @if (!string.IsNullOrEmpty(Model.Perfume.MiddleNotes))
                 {
-                    <div class="mb-2">
-                        <strong class="text-muted small">ORTA:</strong> @Model.Perfume.MiddleNotes
+                    <div class="note-row">
+                        <div class="note-row-label">
+                            <i class="bi bi-record-circle"></i>
+                            <span>Orta Notalar (Kalp)</span>
+                        </div>
+                        <div class="note-chips">@Html.Raw(RenderNoteChips(Model.Perfume.MiddleNotes))</div>
                     </div>
                 }
                 @if (!string.IsNullOrEmpty(Model.Perfume.BaseNotes))
                 {
-                    <div class="mb-2">
-                        <strong class="text-muted small">ALT:</strong> @Model.Perfume.BaseNotes
+                    <div class="note-row">
+                        <div class="note-row-label">
+                            <i class="bi bi-arrow-down-circle"></i>
+                            <span>Alt Notalar (Baz)</span>
+                        </div>
+                        <div class="note-chips">@Html.Raw(RenderNoteChips(Model.Perfume.BaseNotes))</div>
                     </div>
                 }
 
                 <hr />
 
-                <h6 class="text-muted small mb-2">ANA AKORLAR</h6>
+                <h6 class="text-muted small mb-2">
+                    <i class="bi bi-palette-fill me-1"></i> ANA AKORLAR
+                </h6>
                 <div class="d-flex flex-wrap gap-2">
                     @foreach (var accord in new[] { Model.Perfume.Accord1, Model.Perfume.Accord2,
                               Model.Perfume.Accord3, Model.Perfume.Accord4, Model.Perfume.Accord5 })
                     {
                         if (!string.IsNullOrEmpty(accord))
                         {
-                            <span class="badge bg-light text-dark border">@accord</span>
+                            var s = AccordVisual.Get(accord);
+                            <span class="accord-chip" style="background:@s.Hex; color:@s.TextHex">
+                                <i class="bi @s.Icon"></i>
+                                <span>@accord</span>
+                            </span>
                         }
                     }
                 </div>
