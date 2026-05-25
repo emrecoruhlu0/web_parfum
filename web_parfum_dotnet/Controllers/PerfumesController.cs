@@ -118,10 +118,11 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
         if (currentUser.IsAuthenticated && currentUser.UserId is int userId)
         {
             vm.IsLiked = await db.Likes.AnyAsync(l => l.PerfumeId == id && l.UserId == userId);
-            vm.UserCollectionStatus = await db.Collections
+            var statuses = await db.Collections
                 .Where(c => c.PerfumeId == id && c.UserId == userId)
                 .Select(c => c.Status)
-                .FirstOrDefaultAsync();
+                .ToListAsync();
+            vm.UserCollectionStatuses = new HashSet<string>(statuses, StringComparer.OrdinalIgnoreCase);
             vm.UserReview = await db.Reviews
                 .FirstOrDefaultAsync(r => r.PerfumeId == id && r.UserId == userId);
         }

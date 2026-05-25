@@ -165,10 +165,12 @@
                         if (!string.IsNullOrEmpty(accord))
                         {
                             var s = AccordVisual.Get(accord);
-                            <span class="accord-chip" style="background:@s.Hex; color:@s.TextHex">
+                            <a asp-controller="Perfumes" asp-action="Index" asp-route-Accord="@accord"
+                               class="accord-chip" style="background:@s.Hex; color:@s.TextHex"
+                               title="@accord akoruna sahip parfümleri ara">
                                 <i class="bi @s.Icon"></i>
                                 <span>@accord</span>
-                            </span>
+                            </a>
                         }
                     }
                 </div>

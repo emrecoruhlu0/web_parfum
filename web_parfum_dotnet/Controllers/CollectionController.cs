@@ -61,11 +61,10 @@ public class CollectionController(AppDbContext db, ICurrentUserService currentUs
             return NotFound();
 
         var existing = await db.Collections
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.PerfumeId == perfumeId);
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.PerfumeId == perfumeId && c.Status == status);
 
         if (existing != null)
         {
-            existing.Status = status;
             if (bottleLevel.HasValue) existing.BottleLevel = Math.Clamp(bottleLevel.Value, 0, 100);
             existing.UpdatedAt = DateTime.UtcNow;
         }
@@ -86,13 +85,62 @@ public class CollectionController(AppDbContext db, ICurrentUserService currentUs
         return RedirectToAction(nameof(Index), new { status });
     }
 
+    // Aynı parfümün bir status'ünü açıp kapatmak için — Details sayfasındaki
+    // checkbox tipi toggle formları bunu çağırır.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Toggle(int perfumeId, string status, string? returnUrl)
+    {
+        var userId = currentUser.UserId!.Value;
+        status = (status ?? "").ToLower();
+        if (!ValidStatuses.Contains(status))
+        {
+            TempData["Error"] = "Geçersiz durum.";
+            return RedirectBack(returnUrl, perfumeId);
+        }
+
+        if (!await db.Perfumes.AnyAsync(p => p.Id == perfumeId))
+            return NotFound();
+
+        var existing = await db.Collections
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.PerfumeId == perfumeId && c.Status == status);
+
+        if (existing != null)
+        {
+            db.Collections.Remove(existing);
+        }
+        else
+        {
+            db.Collections.Add(new Collection
+            {
+                UserId = userId,
+                PerfumeId = perfumeId,
+                Status = status,
+                BottleLevel = 100,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+        }
+
+        await db.SaveChangesAsync();
+        return RedirectBack(returnUrl, perfumeId);
+    }
+
+    private IActionResult RedirectBack(string? returnUrl, int perfumeId)
+    {
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+        return RedirectToAction("Details", "Perfumes", new { id = perfumeId });
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateBottleLevel(int perfumeId, int bottleLevel)
     {
         var userId = currentUser.UserId!.Value;
+        // Bottle level kavramı sadece "owned" için anlamlı.
         var item = await db.Collections
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.PerfumeId == perfumeId);
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.PerfumeId == perfumeId && c.Status == "owned");
         if (item == null) return NotFound();
 
         item.BottleLevel = Math.Clamp(bottleLevel, 0, 100);
@@ -104,17 +152,23 @@ public class CollectionController(AppDbContext db, ICurrentUserService currentUs
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(int perfumeId)
+    public async Task<IActionResult> Delete(int perfumeId, string? status)
     {
         var userId = currentUser.UserId!.Value;
-        var item = await db.Collections
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.PerfumeId == perfumeId);
-        if (item == null) return NotFound();
+        var query = db.Collections.Where(c => c.UserId == userId && c.PerfumeId == perfumeId);
+        if (!string.IsNullOrEmpty(status))
+        {
+            var s = status.ToLower();
+            query = query.Where(c => c.Status == s);
+        }
 
-        var status = item.Status;
-        db.Collections.Remove(item);
+        var items = await query.ToListAsync();
+        if (items.Count == 0) return NotFound();
+
+        var returnStatus = items[0].Status;
+        db.Collections.RemoveRange(items);
         await db.SaveChangesAsync();
 
-        return RedirectToAction(nameof(Index), new { status });
+        return RedirectToAction(nameof(Index), new { status = returnStatus });
     }
 }

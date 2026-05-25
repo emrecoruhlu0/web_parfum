@@ -32,6 +32,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Like>()
             .HasIndex(l => new { l.UserId, l.PerfumeId }).IsUnique();
 
+        // Bir kullanıcı aynı parfümü hem owned hem wishlist hem tried işaretleyebilir,
+        // ama aynı status iki kez olamaz.
+        modelBuilder.Entity<Collection>()
+            .HasIndex(c => new { c.UserId, c.PerfumeId, c.Status }).IsUnique();
+
         modelBuilder.Entity<Follow>()
             .HasIndex(f => new { f.FollowerId, f.FollowingId }).IsUnique();
 

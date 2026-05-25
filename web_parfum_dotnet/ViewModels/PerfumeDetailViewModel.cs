@@ -11,6 +11,6 @@ public class PerfumeDetailViewModel
 
     // Current user state
     public bool IsLiked { get; set; }
-    public string? UserCollectionStatus { get; set; } // owned | wishlist | tried | null
+    public HashSet<string> UserCollectionStatuses { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Review? UserReview { get; set; }
 }

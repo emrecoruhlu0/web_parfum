@@ -95,6 +95,7 @@ else
                             <form asp-action="Delete" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="perfumeId" value="@item.PerfumeId" />
+                                <input type="hidden" name="status" value="@item.Status" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                         onclick="return confirm('Koleksiyondan çıkarılsın mı?');">
                                     <i class="bi bi-trash"></i>
