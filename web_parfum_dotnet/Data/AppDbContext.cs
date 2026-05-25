@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using WebParfum.Models;
 
 namespace WebParfum.Data;
@@ -88,5 +89,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(c => c.OwnerId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Perfume — pg_trgm üzerinden arama için GENERATED STORED kolonlar.
+        // Asıl tanım migration'da (raw SQL); burada sadece EF'e "bu kolonları yazma" diyoruz.
+        modelBuilder.Entity<Perfume>(b =>
+        {
+            var searchKey = b.Property(p => p.SearchKey).ValueGeneratedOnAddOrUpdate();
+            searchKey.Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            searchKey.Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
+
+            var searchKeyName = b.Property(p => p.SearchKeyName).ValueGeneratedOnAddOrUpdate();
+            searchKeyName.Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            searchKeyName.Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
+        });
     }
 }

@@ -12,7 +12,6 @@
 <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-2">
     <div>
         <h2 class="font-serif mb-1">Keşfet</h2>
-        <p class="text-muted mb-0 small">@Model.TotalCount.ToString("N0") parfüm bulundu</p>
     </div>
     @if (User.Identity?.IsAuthenticated == true)
     {
@@ -34,7 +33,7 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="text-muted small">Sırala:</span>
-            <select name="Sort" class="filter-sort-select" onchange="document.getElementById('filterForm').submit();">
+            <select name="Sort" id="sortSelect" class="filter-sort-select">
                 <option value="popular" selected="@(Model.Sort == "popular")">Popüler</option>
                 <option value="rating" selected="@(Model.Sort == "rating")">Puan</option>
                 <option value="newest" selected="@(Model.Sort == "newest")">Yeni</option>
@@ -211,104 +210,11 @@
     }
 </form>
 
-<div class="row g-3">
-    @foreach (var p in Model.Perfumes)
-    {
-        var placeholder = $"https://placehold.co/200x200/f8e8d0/d97706?text={Uri.EscapeDataString(p.Brand?.Length > 0 ? p.Brand.Substring(0, Math.Min(2, p.Brand.Length)) : "?")}";
-        <div class="col-sm-6 col-lg-4 col-xl-3">
-            <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none">
-                <div class="parfum-card card h-100">
-                    <div class="perfume-card-img-wrap">
-                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? placeholder : p.ImageUrl)"
-                             alt="@p.Name"
-                             class="perfume-card-img"
-                             onerror="this.src='@placeholder'" />
-                    </div>
-                    <div class="card-body pt-2">
-                        <h6 class="font-serif mb-0 text-truncate text-dark">@p.Name</h6>
-                        <p class="text-muted small mb-2 text-truncate">@p.Brand</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                @if (!string.IsNullOrEmpty(p.Accord1))
-                                {
-                                    var s1 = AccordVisual.Get(p.Accord1);
-                                    <span class="badge border me-1" style="font-size:.65rem;background:@(s1.Hex)20;color:@s1.Hex;border-color:@(s1.Hex)55 !important">
-                                        <i class="bi @s1.Icon me-1"></i>@p.Accord1
-                                    </span>
-                                }
-                                @if (!string.IsNullOrEmpty(p.Accord2))
-                                {
-                                    var s2 = AccordVisual.Get(p.Accord2);
-                                    <span class="badge border" style="font-size:.65rem;background:@(s2.Hex)20;color:@s2.Hex;border-color:@(s2.Hex)55 !important">
-                                        <i class="bi @s2.Icon me-1"></i>@p.Accord2
-                                    </span>
-                                }
-                            </div>
-                            <span class="badge bg-warning text-dark">
-                                <i class="bi bi-star-fill"></i> @(p.RatingValue?.ToString("F1") ?? "-")
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    }
+<div id="perfumeResults">
+    @await Html.PartialAsync("_PerfumeGrid", Model)
 </div>
 
-@if (!Model.Perfumes.Any())
-{
-    <div class="text-center py-5">
-        <i class="bi bi-search text-muted" style="font-size:2.5rem"></i>
-        <p class="text-muted mt-2 mb-1">Bu kriterlere uyan parfüm bulunamadı.</p>
-        <a asp-action="Index" class="btn btn-sm btn-outline-secondary mt-2">
-            <i class="bi bi-arrow-counterclockwise me-1"></i> Filtreleri temizle
-        </a>
-    </div>
-}
-
-@if (Model.TotalPages > 1)
-{
-    <nav class="mt-4">
-        <ul class="pagination justify-content-center">
-            @{
-                var prev = Math.Max(1, Model.Page - 1);
-                var next = Math.Min(Model.TotalPages, Model.Page + 1);
-                var startPage = Math.Max(1, Model.Page - 3);
-                var endPage = Math.Min(Model.TotalPages, Model.Page + 3);
-            }
-            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
-                <a class="page-link" asp-action="Index"
-                   asp-all-route-data="@PageRoute(prev)">«</a>
-            </li>
-            @for (int i = startPage; i <= endPage; i++)
-            {
-                <li class="page-item @(Model.Page == i ? "active" : "")">
-                    <a class="page-link" asp-action="Index"
-                       asp-all-route-data="@PageRoute(i)">@i</a>
-                </li>
-            }
-            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" asp-action="Index"
-                   asp-all-route-data="@PageRoute(next)">»</a>
-            </li>
-        </ul>
-    </nav>
-}
-
 @functions {
-    Dictionary<string, string?> PageRoute(int page)
-    {
-        return new Dictionary<string, string?>
-        {
-            ["Page"] = page.ToString(),
-            ["Search"] = Model.Search,
-            ["Brand"] = Model.Brand,
-            ["Gender"] = Model.Gender,
-            ["Accord"] = Model.Accord,
-            ["Sort"] = Model.Sort,
-        };
-    }
-
     Dictionary<string, string?> RouteWithout(string remove)
     {
         var r = new Dictionary<string, string?>
@@ -326,87 +232,134 @@
 
 @section Scripts {
     <script>
-        // Chip tıklaması → hidden input'a yaz, formu submit et (toggle davranışı)
-        document.querySelectorAll('[data-filter][data-value]').forEach(chip => {
-            chip.addEventListener('click', (e) => {
-                e.preventDefault();
-                const key = chip.dataset.filter;
-                const val = chip.dataset.value;
-                const input = document.getElementById('filter' + key);
-                if (!input) return;
-                // Aynı değere tekrar basılırsa kaldır
-                input.value = (input.value === val) ? '' : val;
-                document.getElementById('filterForm').submit();
-            });
-        });
-
-        // "Daha fazla göster / daha az" toggle (akor satırı için)
-        document.querySelectorAll('.filter-toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const wrap = btn.closest('.filter-collapsible');
-                if (wrap) wrap.classList.toggle('expanded');
-            });
-        });
-
-        // Marka dropdown: aç/kapa, arama, dış tıkla kapat, X ile temizle
         (function () {
-            const wrap = document.getElementById('brandDropdown');
-            if (!wrap) return;
-            const toggle = document.getElementById('brandDropdownToggle');
-            const search = document.getElementById('brandSearchInput');
-            const list = document.getElementById('brandDropdownList');
-            const empty = document.getElementById('brandDropdownEmpty');
+            const filterForm = document.getElementById('filterForm');
+            const resultsContainer = document.getElementById('perfumeResults');
+            if (!filterForm || !resultsContainer) return;
 
-            toggle.addEventListener('click', (e) => {
-                if (e.target.closest('[data-clear-brand]')) return;
-                wrap.classList.toggle('open');
-                if (wrap.classList.contains('open')) {
-                    setTimeout(() => search.focus(), 50);
+            // AJAX ile filtre uygula → focus input'ta kalır, sadece grid yenilenir.
+            let currentController = null;
+            let isFetching = false;
+
+            async function applyFilters({ resetPage = true } = {}) {
+                if (resetPage) {
+                    // Yeni filtreleme her zaman 1. sayfadan başlar
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('Page');
+                    history.replaceState(null, '', url.pathname + url.search);
                 }
-            });
 
-            document.addEventListener('click', (e) => {
-                if (!wrap.contains(e.target)) wrap.classList.remove('open');
-            });
+                if (currentController) currentController.abort();
+                currentController = new AbortController();
 
-            search.addEventListener('input', () => {
-                const q = search.value.trim().toLowerCase();
-                let visible = 0;
-                list.querySelectorAll('.brand-dropdown-item').forEach(item => {
-                    const name = (item.querySelector('.brand-name')?.textContent || '').toLowerCase();
-                    const match = !q || name.includes(q);
-                    item.style.display = match ? '' : 'none';
-                    if (match) visible++;
-                });
-                empty.style.display = visible === 0 ? 'block' : 'none';
-            });
+                const params = new URLSearchParams(new FormData(filterForm));
+                const url = `${window.location.pathname}?${params.toString()}`;
 
-            search.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') wrap.classList.remove('open');
-            });
+                isFetching = true;
+                resultsContainer.classList.add('is-loading');
+                try {
+                    const res = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                        signal: currentController.signal
+                    });
+                    if (!res.ok) return;
+                    const html = await res.text();
+                    resultsContainer.innerHTML = html;
+                    history.replaceState(null, '', url);
+                } catch (e) {
+                    if (e.name !== 'AbortError') console.error(e);
+                } finally {
+                    isFetching = false;
+                    resultsContainer.classList.remove('is-loading');
+                }
+            }
 
-            // X butonu — markayı temizle ve formu submit
-            const clearBtn = wrap.querySelector('[data-clear-brand]');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    document.getElementById('filterBrand').value = '';
-                    document.getElementById('filterForm').submit();
+            // Search input — debounce 300ms (form submit'i bastır, sadece AJAX)
+            const searchInput = filterForm.querySelector('input[name="Search"]');
+            if (searchInput) {
+                let searchTimer;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(applyFilters, 300);
                 });
             }
-        })();
-
-        // Aramayı Enter ile submit (zaten varsayılan), ama 600ms debounce ile auto-submit de
-        let searchTimer;
-        const searchInput = document.querySelector('input[name="Search"]');
-        if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(() => {
-                    document.getElementById('filterForm').submit();
-                }, 600);
+            filterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                applyFilters();
             });
-        }
+
+            // Sort select
+            const sortSelect = document.getElementById('sortSelect');
+            if (sortSelect) sortSelect.addEventListener('change', () => applyFilters());
+
+            // Chip tıklaması → hidden input'a yaz, AJAX uygula (toggle davranışı)
+            document.querySelectorAll('[data-filter][data-value]').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const key = chip.dataset.filter;
+                    const val = chip.dataset.value;
+                    const input = document.getElementById('filter' + key);
+                    if (!input) return;
+                    input.value = (input.value === val) ? '' : val;
+                    applyFilters();
+                });
+            });
+
+            // "Daha fazla göster / daha az" toggle (akor satırı için)
+            document.querySelectorAll('.filter-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const wrap = btn.closest('.filter-collapsible');
+                    if (wrap) wrap.classList.toggle('expanded');
+                });
+            });
+
+            // Marka dropdown: aç/kapa, arama, dış tıkla kapat, X ile temizle
+            (function () {
+                const wrap = document.getElementById('brandDropdown');
+                if (!wrap) return;
+                const toggle = document.getElementById('brandDropdownToggle');
+                const search = document.getElementById('brandSearchInput');
+                const list = document.getElementById('brandDropdownList');
+                const empty = document.getElementById('brandDropdownEmpty');
+
+                toggle.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-clear-brand]')) return;
+                    wrap.classList.toggle('open');
+                    if (wrap.classList.contains('open')) {
+                        setTimeout(() => search.focus(), 50);
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!wrap.contains(e.target)) wrap.classList.remove('open');
+                });
+
+                search.addEventListener('input', () => {
+                    const q = search.value.trim().toLowerCase();
+                    let visible = 0;
+                    list.querySelectorAll('.brand-dropdown-item').forEach(item => {
+                        const name = (item.querySelector('.brand-name')?.textContent || '').toLowerCase();
+                        const match = !q || name.includes(q);
+                        item.style.display = match ? '' : 'none';
+                        if (match) visible++;
+                    });
+                    empty.style.display = visible === 0 ? 'block' : 'none';
+                });
+
+                search.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') wrap.classList.remove('open');
+                });
+
+                const clearBtn = wrap.querySelector('[data-clear-brand]');
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        document.getElementById('filterBrand').value = '';
+                        applyFilters();
+                    });
+                }
+            })();
+        })();
     </script>
 }

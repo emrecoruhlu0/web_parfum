@@ -33,6 +33,11 @@ public class Perfume
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // PostgreSQL GENERATED STORED column'lar (perfume_normalize fonksiyonuyla).
+    // AppDbContext'te ValueGeneratedOnAddOrUpdate + Ignore-after-save olarak mapping yapılır.
+    public string? SearchKey { get; private set; }
+    public string? SearchKeyName { get; private set; }
+
     public ICollection<Collection> Collections { get; set; } = [];
     public ICollection<DailyLog> DailyLogs { get; set; } = [];
     public ICollection<Review> Reviews { get; set; } = [];

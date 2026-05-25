@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebParfum.Data;
+using WebParfum.Helpers;
 using WebParfum.Models;
 using WebParfum.Services;
 using WebParfum.ViewModels;
@@ -14,15 +15,7 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
     {
         ViewData["ActivePage"] = "Discover";
 
-        var query = db.Perfumes.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(filter.Search))
-        {
-            var s = filter.Search.Trim().ToLower();
-            query = query.Where(p =>
-                EF.Functions.ILike(p.Name, $"%{s}%") ||
-                EF.Functions.ILike(p.Brand, $"%{s}%"));
-        }
+        var query = db.Perfumes.AsQueryable().ApplySearch(filter.Search);
 
         if (!string.IsNullOrWhiteSpace(filter.Brand))
             query = query.Where(p => p.Brand == filter.Brand);
@@ -86,6 +79,10 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
                 .OrderByDescending(f => f.Count)
                 .ToList();
         }
+
+        // AJAX (Keşfet sayfasında akıcı arama): sadece grid partial'ı dön — focus korunur.
+        if (Request.Headers.XRequestedWith == "XMLHttpRequest")
+            return PartialView("_PerfumeGrid", filter);
 
         return View(filter);
     }
@@ -172,27 +169,42 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
     }
 
     // Autocomplete endpoint — kullanıldığı yerler: DailyLog modal, Community post,
-    // Feed quick share. İsim veya marka eşleştirmesi yapar.
+    // Feed quick share. pg_trgm + unaccent destekli SearchKey üzerinden tipo toleranslı,
+    // kelime sırasından bağımsız arama. Notes/Accord'ları da kapsar; Name+Brand öncelikli sıralanır.
     [HttpGet]
     public async Task<IActionResult> Search(string? q, int limit = 10)
     {
-        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 1)
-            return Json(Array.Empty<object>());
+        if (string.IsNullOrWhiteSpace(q)) return Json(Array.Empty<object>());
 
-        var s = q.Trim();
+        var normalized = SearchNormalizer.Normalize(q);
+        if (normalized.Length == 0) return Json(Array.Empty<object>());
+
         limit = Math.Clamp(limit, 1, 25);
 
+        var prefix = normalized + "%";
         var results = await db.Perfumes
-            .Where(p => EF.Functions.ILike(p.Name, $"%{s}%") ||
-                        EF.Functions.ILike(p.Brand, $"%{s}%"))
-            .OrderByDescending(p => p.RatingCount ?? 0)
-            .Take(limit)
+            .AsQueryable()
+            .ApplySearch(q)
             .Select(p => new
             {
-                id = p.Id,
-                name = p.Name,
-                brand = p.Brand,
-                imageUrl = p.ImageUrl,
+                p.Id, p.Name, p.Brand, p.ImageUrl, p.RatingCount,
+                ExactName  = p.SearchKeyName == normalized,
+                PrefixName = EF.Functions.ILike(p.SearchKeyName!, prefix),
+                WSimName   = EF.Functions.TrigramsWordSimilarity(normalized, p.SearchKeyName!),
+                WSimAll    = EF.Functions.TrigramsWordSimilarity(normalized, p.SearchKey!),
+            })
+            .OrderByDescending(x => x.ExactName)
+            .ThenByDescending(x => x.PrefixName)
+            .ThenByDescending(x => x.WSimName)
+            .ThenByDescending(x => x.WSimAll)
+            .ThenByDescending(x => x.RatingCount ?? 0)
+            .Take(limit)
+            .Select(x => new
+            {
+                id = x.Id,
+                name = x.Name,
+                brand = x.Brand,
+                imageUrl = x.ImageUrl,
             })
             .ToListAsync();
 
