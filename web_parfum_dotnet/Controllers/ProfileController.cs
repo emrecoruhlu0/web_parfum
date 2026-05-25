@@ -6,10 +6,10 @@ using WebParfum.ViewModels;
 
 namespace WebParfum.Controllers;
 
-public class ProfileController(AppDbContext db, ICurrentUserService currentUser) : Controller
+public class ProfileController(AppDbContext db, ICurrentUserService currentUser, UserTasteProfileService tasteService) : Controller
 {
     private static readonly HashSet<string> ValidSections = new(StringComparer.OrdinalIgnoreCase)
-        { "collection", "logs", "reviews" };
+        { "collection", "logs", "reviews", "taste" };
     private static readonly HashSet<string> ValidCollectionStatuses = new(StringComparer.OrdinalIgnoreCase)
         { "owned", "wishlist", "tried" };
 
@@ -135,6 +135,12 @@ public class ProfileController(AppDbContext db, ICurrentUserService currentUser)
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(30)
                 .ToListAsync();
+        }
+        else if (tab == "taste")
+        {
+            vm.TasteProfile = await tasteService.ComputeAsync(user.Id);
+            if (vm.TasteProfile.SignalCount > 0)
+                vm.Recommendations = await tasteService.RecommendAsync(user.Id, 12);
         }
 
         // Aggregation: kullanıcının DailyLog'larındaki parfümlerin top notes ve accord'ları

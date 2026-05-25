@@ -1,4 +1,5 @@
 using WebParfum.Models;
+using WebParfum.Services;
 
 namespace WebParfum.ViewModels;
 
@@ -27,4 +28,5 @@ public class FeedViewModel
     public List<FeedItem> Items { get; set; } = [];
     public bool HasFollows { get; set; }
     public List<Perfume> FallbackPopular { get; set; } = [];
+    public List<PerfumeRecommendation> Recommendations { get; set; } = [];
 }

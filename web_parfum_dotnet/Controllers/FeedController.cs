@@ -8,7 +8,7 @@ using WebParfum.ViewModels;
 namespace WebParfum.Controllers;
 
 [Authorize]
-public class FeedController(AppDbContext db, ICurrentUserService currentUser) : Controller
+public class FeedController(AppDbContext db, ICurrentUserService currentUser, UserTasteProfileService tasteService) : Controller
 {
     public async Task<IActionResult> Index()
     {
@@ -100,6 +100,9 @@ public class FeedController(AppDbContext db, ICurrentUserService currentUser) : 
                 .Take(20)
                 .ToListAsync();
         }
+
+        // Kullanıcının koku profiline göre kişiselleştirilmiş öneriler
+        vm.Recommendations = await tasteService.RecommendAsync(userId, 8);
 
         return View(vm);
     }

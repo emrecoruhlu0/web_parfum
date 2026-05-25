@@ -1,4 +1,5 @@
 using WebParfum.Models;
+using WebParfum.Services;
 
 namespace WebParfum.ViewModels;
 
@@ -28,6 +29,10 @@ public class ProfileViewModel
     // Aggregation (top notes/accords from DailyLogs)
     public List<NoteFreq> TopNotes { get; set; } = [];
     public List<NoteFreq> TopAccords { get; set; } = [];
+
+    // Taste profile (yeni — tüm etkileşimlerden ağırlıklı hesaplanır)
+    public TasteProfile? TasteProfile { get; set; }
+    public List<PerfumeRecommendation> Recommendations { get; set; } = [];
 }
 
 public record NoteFreq(string Name, int Count);
