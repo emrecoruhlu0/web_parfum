@@ -1143,6 +1143,18 @@ body {
     font-size: 0.85rem;
     font-weight: 500;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    cursor: pointer;
+}
+
+a.accord-chip:hover,
+a.accord-chip:focus {
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.08);
+    color: inherit;
 }
 
 .accord-chip i {
