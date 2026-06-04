@@ -76,6 +76,14 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     DbInitializer.Initialize(db);
+
+    // SEED_MOCK env: "true" → ek mock veri ekle (idempotent),
+    //                "clean" → mock veriyi ve bağlı her şeyi geri al.
+    var seedMode = builder.Configuration["SEED_MOCK"];
+    if (string.Equals(seedMode, "true", StringComparison.OrdinalIgnoreCase))
+        DbInitializer.SeedAdditionalMockData(db);
+    else if (string.Equals(seedMode, "clean", StringComparison.OrdinalIgnoreCase))
+        DbInitializer.CleanMockData(db);
 }
 
 app.Run();

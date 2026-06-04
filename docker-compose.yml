@@ -32,6 +32,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-web_parfum};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}"
+      # SEED_MOCK: boş=normal, "true"=ek mock veri ekle, "clean"=mock veriyi geri al
+      SEED_MOCK: ${SEED_MOCK:-}
     ports:
       - "${APP_PORT:-8080}:8080"
 

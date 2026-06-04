@@ -438,4 +438,348 @@ public static class DbInitializer
         var normalized = val.Replace(',', '.');
         return double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : null;
     }
+
+    // ---------------------------------------------------------------------
+    // Ek mock veri — SEED_MOCK=true ile tetiklenir (Program.cs).
+    // İşaret: tüm mock kullanıcıların email'i "@mock.local" ile biter.
+    // Idempotent: mock kullanıcılar zaten varsa hiçbir şey yapmaz.
+    // ---------------------------------------------------------------------
+    private const string MockEmailSuffix = "@mock.local";
+
+    public static void SeedAdditionalMockData(AppDbContext db)
+    {
+        if (db.Users.Any(u => u.Email.EndsWith(MockEmailSuffix)))
+        {
+            Console.WriteLine("[MockSeed] Mock kullanıcılar zaten mevcut, ekleme atlanıyor.");
+            return;
+        }
+
+        // Parfümlere ihtiyacımız var; CSV seed edilmemişse anlamlı veri üretemeyiz.
+        var perfumes = db.Perfumes.OrderBy(p => p.Id).Take(60).ToList();
+        if (perfumes.Count < 30)
+        {
+            Console.WriteLine("[MockSeed] Yeterli parfüm yok, mock veri atlanıyor.");
+            return;
+        }
+
+        var p = perfumes;
+        var hash = BCrypt.Net.BCrypt.HashPassword("password123");
+        var now = DateTime.UtcNow;
+
+        // --- 10 yeni kullanıcı (her birinin belirgin bir koku karakteri var) ---
+        var users = new List<User>
+        {
+            new() { Username = "deniz",   Email = "deniz@mock.local",   PasswordHash = hash, Bio = "Aquatik ve marine kokuların peşinde bir deniz tutkunu.", CreatedAt = now.AddDays(-40) },
+            new() { Username = "selin",   Email = "selin@mock.local",   PasswordHash = hash, Bio = "Gurmand ve tatlı kokular benim zaafım.", CreatedAt = now.AddDays(-38) },
+            new() { Username = "kerem",   Email = "kerem@mock.local",   PasswordHash = hash, Bio = "Odunsu ve deri notalar, klasik bir erkek.", CreatedAt = now.AddDays(-35) },
+            new() { Username = "ece",     Email = "ece@mock.local",     PasswordHash = hash, Bio = "Pudramsı ve iris bazlı zarafet arıyorum.", CreatedAt = now.AddDays(-33) },
+            new() { Username = "burak",   Email = "burak@mock.local",   PasswordHash = hash, Bio = "Baharatlı ve füme kokuların hayranıyım.", CreatedAt = now.AddDays(-30) },
+            new() { Username = "irem",    Email = "irem@mock.local",    PasswordHash = hash, Bio = "Beyaz çiçekler ve yaseminle büyülenirim.", CreatedAt = now.AddDays(-28) },
+            new() { Username = "tolga",   Email = "tolga@mock.local",   PasswordHash = hash, Bio = "Fougère ve aromatik kokular, sade ama güçlü.", CreatedAt = now.AddDays(-25) },
+            new() { Username = "pelin",   Email = "pelin@mock.local",   PasswordHash = hash, Bio = "Meyvemsi ve neşeli kokular her günümü renklendiriyor.", CreatedAt = now.AddDays(-22) },
+            new() { Username = "onur",    Email = "onur@mock.local",    PasswordHash = hash, Bio = "Tütün, vanilya ve sıcak kokular akşamların efendisi.", CreatedAt = now.AddDays(-20) },
+            new() { Username = "melis",   Email = "melis@mock.local",   PasswordHash = hash, Bio = "Yeşil, çimensi ve toprak kokuları doğayı hatırlatıyor.", CreatedAt = now.AddDays(-18) },
+        };
+        db.Users.AddRange(users);
+        db.SaveChanges();
+        var u = users;
+
+        // --- Collections ---
+        // Her kullanıcı 3-5 parfüm: bazısı owned (şişe seviyesi ile), wishlist, tried.
+        var collections = new List<Collection>
+        {
+            // deniz (0) — aquatik
+            new() { UserId = u[0].Id, PerfumeId = p[21].Id, Status = "owned",    BottleLevel = 75, CreatedAt = now.AddDays(-39), UpdatedAt = now.AddDays(-39) },
+            new() { UserId = u[0].Id, PerfumeId = p[22].Id, Status = "owned",    BottleLevel = 40, CreatedAt = now.AddDays(-38), UpdatedAt = now.AddDays(-10) },
+            new() { UserId = u[0].Id, PerfumeId = p[23].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-30), UpdatedAt = now.AddDays(-30) },
+            new() { UserId = u[0].Id, PerfumeId = p[24].Id, Status = "tried",    BottleLevel = 0,  CreatedAt = now.AddDays(-15), UpdatedAt = now.AddDays(-15) },
+
+            // selin (1) — gurmand
+            new() { UserId = u[1].Id, PerfumeId = p[25].Id, Status = "owned",    BottleLevel = 90, CreatedAt = now.AddDays(-37), UpdatedAt = now.AddDays(-37) },
+            new() { UserId = u[1].Id, PerfumeId = p[26].Id, Status = "owned",    BottleLevel = 55, CreatedAt = now.AddDays(-35), UpdatedAt = now.AddDays(-8) },
+            new() { UserId = u[1].Id, PerfumeId = p[27].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-20), UpdatedAt = now.AddDays(-20) },
+
+            // kerem (2) — odunsu/deri
+            new() { UserId = u[2].Id, PerfumeId = p[28].Id, Status = "owned",    BottleLevel = 65, CreatedAt = now.AddDays(-34), UpdatedAt = now.AddDays(-34) },
+            new() { UserId = u[2].Id, PerfumeId = p[29].Id, Status = "owned",    BottleLevel = 30, CreatedAt = now.AddDays(-33), UpdatedAt = now.AddDays(-5) },
+            new() { UserId = u[2].Id, PerfumeId = p[30].Id, Status = "tried",    BottleLevel = 0,  CreatedAt = now.AddDays(-12), UpdatedAt = now.AddDays(-12) },
+            new() { UserId = u[2].Id, PerfumeId = p[31].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-11), UpdatedAt = now.AddDays(-11) },
+
+            // ece (3) — pudramsı/iris
+            new() { UserId = u[3].Id, PerfumeId = p[32].Id, Status = "owned",    BottleLevel = 85, CreatedAt = now.AddDays(-32), UpdatedAt = now.AddDays(-32) },
+            new() { UserId = u[3].Id, PerfumeId = p[33].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-18), UpdatedAt = now.AddDays(-18) },
+            new() { UserId = u[3].Id, PerfumeId = p[34].Id, Status = "tried",    BottleLevel = 0,  CreatedAt = now.AddDays(-9),  UpdatedAt = now.AddDays(-9) },
+
+            // burak (4) — baharatlı/füme
+            new() { UserId = u[4].Id, PerfumeId = p[35].Id, Status = "owned",    BottleLevel = 50, CreatedAt = now.AddDays(-29), UpdatedAt = now.AddDays(-29) },
+            new() { UserId = u[4].Id, PerfumeId = p[36].Id, Status = "owned",    BottleLevel = 20, CreatedAt = now.AddDays(-27), UpdatedAt = now.AddDays(-3) },
+            new() { UserId = u[4].Id, PerfumeId = p[37].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-14), UpdatedAt = now.AddDays(-14) },
+
+            // irem (5) — beyaz çiçek
+            new() { UserId = u[5].Id, PerfumeId = p[38].Id, Status = "owned",    BottleLevel = 70, CreatedAt = now.AddDays(-26), UpdatedAt = now.AddDays(-26) },
+            new() { UserId = u[5].Id, PerfumeId = p[39].Id, Status = "tried",    BottleLevel = 0,  CreatedAt = now.AddDays(-13), UpdatedAt = now.AddDays(-13) },
+            new() { UserId = u[5].Id, PerfumeId = p[40].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-10), UpdatedAt = now.AddDays(-10) },
+
+            // tolga (6) — fougère
+            new() { UserId = u[6].Id, PerfumeId = p[41].Id, Status = "owned",    BottleLevel = 95, CreatedAt = now.AddDays(-24), UpdatedAt = now.AddDays(-24) },
+            new() { UserId = u[6].Id, PerfumeId = p[42].Id, Status = "owned",    BottleLevel = 60, CreatedAt = now.AddDays(-22), UpdatedAt = now.AddDays(-4) },
+
+            // pelin (7) — meyvemsi
+            new() { UserId = u[7].Id, PerfumeId = p[43].Id, Status = "owned",    BottleLevel = 45, CreatedAt = now.AddDays(-21), UpdatedAt = now.AddDays(-21) },
+            new() { UserId = u[7].Id, PerfumeId = p[44].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-16), UpdatedAt = now.AddDays(-16) },
+            new() { UserId = u[7].Id, PerfumeId = p[45].Id, Status = "tried",    BottleLevel = 0,  CreatedAt = now.AddDays(-7),  UpdatedAt = now.AddDays(-7) },
+
+            // onur (8) — tütün/vanilya
+            new() { UserId = u[8].Id, PerfumeId = p[46].Id, Status = "owned",    BottleLevel = 80, CreatedAt = now.AddDays(-19), UpdatedAt = now.AddDays(-19) },
+            new() { UserId = u[8].Id, PerfumeId = p[47].Id, Status = "owned",    BottleLevel = 35, CreatedAt = now.AddDays(-17), UpdatedAt = now.AddDays(-2) },
+            new() { UserId = u[8].Id, PerfumeId = p[48].Id, Status = "wishlist", BottleLevel = 0,  CreatedAt = now.AddDays(-6),  UpdatedAt = now.AddDays(-6) },
+
+            // melis (9) — yeşil/toprak
+            new() { UserId = u[9].Id, PerfumeId = p[49].Id, Status = "owned",    BottleLevel = 55, CreatedAt = now.AddDays(-17), UpdatedAt = now.AddDays(-17) },
+            new() { UserId = u[9].Id, PerfumeId = p[50].Id, Status = "tried",    BottleLevel = 0,  CreatedAt = now.AddDays(-8),  UpdatedAt = now.AddDays(-8) },
+        };
+        db.Collections.AddRange(collections);
+        db.SaveChanges();
+
+        // --- Reviews (User+Perfume unique; her çift bir kez) ---
+        var reviews = new List<Review>
+        {
+            new() { UserId = u[0].Id, PerfumeId = p[21].Id, Rating = 5, Body = "Tam bir yaz kokusu, deniz esintisini şişeye koymuşlar.", CreatedAt = now.AddDays(-36) },
+            new() { UserId = u[0].Id, PerfumeId = p[22].Id, Rating = 4, Body = "Ferah ama biraz daha kalıcı olsa mükemmeldi.", CreatedAt = now.AddDays(-9) },
+            new() { UserId = u[1].Id, PerfumeId = p[25].Id, Rating = 5, Body = "Vanilya ve karamel cenneti. Tatlı sevenlere bayram.", CreatedAt = now.AddDays(-33) },
+            new() { UserId = u[1].Id, PerfumeId = p[26].Id, Rating = 4, Body = "Sıcak ve sarmalayıcı, kış akşamları için ideal.", CreatedAt = now.AddDays(-7) },
+            new() { UserId = u[2].Id, PerfumeId = p[28].Id, Rating = 5, Body = "Deri ve odun dengesi muazzam. Karizmatik bir koku.", CreatedAt = now.AddDays(-30) },
+            new() { UserId = u[2].Id, PerfumeId = p[29].Id, Rating = 3, Body = "İyi ama açılışı biraz keskin geldi bana.", CreatedAt = now.AddDays(-4) },
+            new() { UserId = u[3].Id, PerfumeId = p[32].Id, Rating = 5, Body = "İris ve pudra zarafeti. Çok sofistike.", CreatedAt = now.AddDays(-28) },
+            new() { UserId = u[4].Id, PerfumeId = p[35].Id, Rating = 4, Body = "Baharatlar güzel ama biraz ağır olabilir gündüz için.", CreatedAt = now.AddDays(-25) },
+            new() { UserId = u[4].Id, PerfumeId = p[36].Id, Rating = 5, Body = "Füme ve odun, gece çıkışlarının vazgeçilmezi oldu.", CreatedAt = now.AddDays(-2) },
+            new() { UserId = u[5].Id, PerfumeId = p[38].Id, Rating = 5, Body = "Yasemin patlaması! Çok feminen ve zarif.", CreatedAt = now.AddDays(-22) },
+            new() { UserId = u[6].Id, PerfumeId = p[41].Id, Rating = 4, Body = "Klasik fougère, hiç eskimeyen bir imza.", CreatedAt = now.AddDays(-20) },
+            new() { UserId = u[6].Id, PerfumeId = p[42].Id, Rating = 4, Body = "Aromatik ve temiz, ofis için tam isabet.", CreatedAt = now.AddDays(-3) },
+            new() { UserId = u[7].Id, PerfumeId = p[43].Id, Rating = 4, Body = "Meyvemsi ve neşeli, modumu hep yükseltiyor.", CreatedAt = now.AddDays(-18) },
+            new() { UserId = u[8].Id, PerfumeId = p[46].Id, Rating = 5, Body = "Tütün ve vanilya, sıcacık bir sarılma gibi.", CreatedAt = now.AddDays(-16) },
+            new() { UserId = u[8].Id, PerfumeId = p[47].Id, Rating = 4, Body = "Akşamları çok yakışıyor, kalıcılığı da iyi.", CreatedAt = now.AddDays(-2) },
+            new() { UserId = u[9].Id, PerfumeId = p[49].Id, Rating = 4, Body = "Yeşil ve toprak kokusu, orman yürüyüşü gibi.", CreatedAt = now.AddDays(-15) },
+            // Çapraz görüşler — başkalarının sahip olduğu parfümleri deneyip yorumlamış
+            new() { UserId = u[1].Id, PerfumeId = p[21].Id, Rating = 3, Body = "Aquatik benim tarzım değil ama kaliteli bir iş.", CreatedAt = now.AddDays(-12) },
+            new() { UserId = u[8].Id, PerfumeId = p[28].Id, Rating = 5, Body = "Kerem haklı, bu deri kokusu efsane.", CreatedAt = now.AddDays(-10) },
+        };
+        db.Reviews.AddRange(reviews);
+        db.SaveChanges();
+
+        // --- DailyLogs ---
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var dailyLogs = new List<DailyLog>
+        {
+            new() { UserId = u[0].Id, PerfumeId = p[21].Id, Date = today,             Sprays = 3, Note = "Sahil yürüyüşü.", CreatedAt = now },
+            new() { UserId = u[0].Id, PerfumeId = p[22].Id, Date = today.AddDays(-2), Sprays = 2, Note = null, CreatedAt = now },
+            new() { UserId = u[1].Id, PerfumeId = p[25].Id, Date = today,             Sprays = 4, Note = "Tatlı bir gün istedim.", CreatedAt = now },
+            new() { UserId = u[1].Id, PerfumeId = p[26].Id, Date = today.AddDays(-1), Sprays = 3, Note = null, CreatedAt = now },
+            new() { UserId = u[2].Id, PerfumeId = p[28].Id, Date = today,             Sprays = 2, Note = "İş görüşmesi.", CreatedAt = now },
+            new() { UserId = u[2].Id, PerfumeId = p[29].Id, Date = today.AddDays(-3), Sprays = 3, Note = null, CreatedAt = now },
+            new() { UserId = u[3].Id, PerfumeId = p[32].Id, Date = today,             Sprays = 2, Note = "Davet.", CreatedAt = now },
+            new() { UserId = u[4].Id, PerfumeId = p[36].Id, Date = today,             Sprays = 4, Note = "Gece çıkışı.", CreatedAt = now },
+            new() { UserId = u[4].Id, PerfumeId = p[35].Id, Date = today.AddDays(-2), Sprays = 3, Note = null, CreatedAt = now },
+            new() { UserId = u[5].Id, PerfumeId = p[38].Id, Date = today,             Sprays = 3, Note = "İlkbahar havası.", CreatedAt = now },
+            new() { UserId = u[6].Id, PerfumeId = p[41].Id, Date = today.AddDays(-1), Sprays = 2, Note = null, CreatedAt = now },
+            new() { UserId = u[7].Id, PerfumeId = p[43].Id, Date = today,             Sprays = 3, Note = "Neşeli bir gün!", CreatedAt = now },
+            new() { UserId = u[8].Id, PerfumeId = p[46].Id, Date = today,             Sprays = 4, Note = "Akşam buluşması.", CreatedAt = now },
+            new() { UserId = u[8].Id, PerfumeId = p[47].Id, Date = today.AddDays(-2), Sprays = 3, Note = null, CreatedAt = now },
+            new() { UserId = u[9].Id, PerfumeId = p[49].Id, Date = today.AddDays(-1), Sprays = 2, Note = "Doğa yürüyüşü.", CreatedAt = now },
+        };
+        db.DailyLogs.AddRange(dailyLogs);
+        db.SaveChanges();
+
+        // --- Likes (User+Perfume unique) ---
+        var likes = new List<Like>
+        {
+            new() { UserId = u[0].Id, PerfumeId = p[21].Id, CreatedAt = now },
+            new() { UserId = u[0].Id, PerfumeId = p[23].Id, CreatedAt = now },
+            new() { UserId = u[1].Id, PerfumeId = p[25].Id, CreatedAt = now },
+            new() { UserId = u[1].Id, PerfumeId = p[27].Id, CreatedAt = now },
+            new() { UserId = u[1].Id, PerfumeId = p[21].Id, CreatedAt = now },
+            new() { UserId = u[2].Id, PerfumeId = p[28].Id, CreatedAt = now },
+            new() { UserId = u[2].Id, PerfumeId = p[31].Id, CreatedAt = now },
+            new() { UserId = u[3].Id, PerfumeId = p[32].Id, CreatedAt = now },
+            new() { UserId = u[3].Id, PerfumeId = p[33].Id, CreatedAt = now },
+            new() { UserId = u[4].Id, PerfumeId = p[36].Id, CreatedAt = now },
+            new() { UserId = u[5].Id, PerfumeId = p[38].Id, CreatedAt = now },
+            new() { UserId = u[6].Id, PerfumeId = p[41].Id, CreatedAt = now },
+            new() { UserId = u[7].Id, PerfumeId = p[43].Id, CreatedAt = now },
+            new() { UserId = u[8].Id, PerfumeId = p[46].Id, CreatedAt = now },
+            new() { UserId = u[8].Id, PerfumeId = p[28].Id, CreatedAt = now },
+            new() { UserId = u[9].Id, PerfumeId = p[49].Id, CreatedAt = now },
+        };
+        db.Likes.AddRange(likes);
+        db.SaveChanges();
+
+        // --- Follows (mock kullanıcılar arası bir sosyal ağ) ---
+        var follows = new List<Follow>
+        {
+            new() { FollowerId = u[0].Id, FollowingId = u[1].Id, CreatedAt = now.AddDays(-30) },
+            new() { FollowerId = u[0].Id, FollowingId = u[2].Id, CreatedAt = now.AddDays(-29) },
+            new() { FollowerId = u[1].Id, FollowingId = u[0].Id, CreatedAt = now.AddDays(-28) },
+            new() { FollowerId = u[1].Id, FollowingId = u[7].Id, CreatedAt = now.AddDays(-27) },
+            new() { FollowerId = u[2].Id, FollowingId = u[8].Id, CreatedAt = now.AddDays(-26) },
+            new() { FollowerId = u[3].Id, FollowingId = u[5].Id, CreatedAt = now.AddDays(-25) },
+            new() { FollowerId = u[4].Id, FollowingId = u[8].Id, CreatedAt = now.AddDays(-24) },
+            new() { FollowerId = u[5].Id, FollowingId = u[3].Id, CreatedAt = now.AddDays(-23) },
+            new() { FollowerId = u[6].Id, FollowingId = u[4].Id, CreatedAt = now.AddDays(-22) },
+            new() { FollowerId = u[7].Id, FollowingId = u[1].Id, CreatedAt = now.AddDays(-21) },
+            new() { FollowerId = u[8].Id, FollowingId = u[2].Id, CreatedAt = now.AddDays(-20) },
+            new() { FollowerId = u[9].Id, FollowingId = u[0].Id, CreatedAt = now.AddDays(-19) },
+        };
+        db.Follows.AddRange(follows);
+        db.SaveChanges();
+
+        // --- Communities (mock kullanıcılar tarafından kurulan) ---
+        var aquaticCommunity = new Community
+        {
+            Name = "Aquatik & Marine",
+            Description = "Deniz, tuz ve ferahlık. Yaz kokularının buluşma noktası.",
+            OwnerId = u[0].Id,
+            CreatedAt = now.AddDays(-30),
+        };
+        var gurmandCommunity = new Community
+        {
+            Name = "Tatlı Kaçamaklar",
+            Description = "Vanilya, karamel, çikolata — gurmand kokuların tatlı dünyası.",
+            OwnerId = u[1].Id,
+            CreatedAt = now.AddDays(-28),
+        };
+        db.Communities.AddRange(aquaticCommunity, gurmandCommunity);
+        db.SaveChanges();
+
+        // --- CommunityMembers (Community+User unique) ---
+        var members = new List<CommunityMember>
+        {
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[0].Id, Role = "admin",  JoinedAt = now.AddDays(-30) },
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[6].Id, Role = "member", JoinedAt = now.AddDays(-24) },
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[9].Id, Role = "member", JoinedAt = now.AddDays(-18) },
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[1].Id, Role = "member", JoinedAt = now.AddDays(-15) },
+            new() { CommunityId = gurmandCommunity.Id, UserId = u[1].Id, Role = "admin",  JoinedAt = now.AddDays(-28) },
+            new() { CommunityId = gurmandCommunity.Id, UserId = u[7].Id, Role = "member", JoinedAt = now.AddDays(-20) },
+            new() { CommunityId = gurmandCommunity.Id, UserId = u[8].Id, Role = "member", JoinedAt = now.AddDays(-17) },
+        };
+        db.CommunityMembers.AddRange(members);
+        db.SaveChanges();
+
+        // --- CommunityPosts ---
+        var posts = new List<CommunityPost>
+        {
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[0].Id, PerfumeId = p[21].Id, Body = "Bu sezonun favorisi, sahilde sürdüğünüzde tam oturuyor.", CreatedAt = now.AddDays(-26) },
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[6].Id, PerfumeId = null,      Body = "Aquatik kokularda kalıcılık hep sorun oluyor, öneriniz var mı?", CreatedAt = now.AddDays(-23) },
+            new() { CommunityId = aquaticCommunity.Id, UserId = u[9].Id, PerfumeId = p[24].Id, Body = "Bunu denedim, beklediğimden daha odunsu çıktı ama hoşuma gitti.", CreatedAt = now.AddDays(-12) },
+            new() { CommunityId = gurmandCommunity.Id, UserId = u[1].Id, PerfumeId = p[25].Id, Body = "Tatlı sevenler buraya! Bu vanilya bombası kesinlikle denenmeli.", CreatedAt = now.AddDays(-24) },
+            new() { CommunityId = gurmandCommunity.Id, UserId = u[8].Id, PerfumeId = p[46].Id, Body = "Tütün-vanilya kombinasyonu gurmandın en olgun hali bence.", CreatedAt = now.AddDays(-16) },
+            new() { CommunityId = gurmandCommunity.Id, UserId = u[7].Id, PerfumeId = null,      Body = "Yazın gurmand giyilir mi? Bence hafif meyvemsi olanlar olur.", CreatedAt = now.AddDays(-9) },
+        };
+        db.CommunityPosts.AddRange(posts);
+        db.SaveChanges();
+
+        // --- Notifications (follow/like/review olaylarını yansıtır) ---
+        var notifications = new List<Notification>
+        {
+            new() { RecipientId = u[1].Id, ActorId = u[0].Id, Type = "follow", IsRead = true,  CreatedAt = now.AddDays(-30) },
+            new() { RecipientId = u[0].Id, ActorId = u[1].Id, Type = "follow", IsRead = true,  CreatedAt = now.AddDays(-28) },
+            new() { RecipientId = u[8].Id, ActorId = u[2].Id, Type = "follow", IsRead = false, CreatedAt = now.AddDays(-26) },
+            new() { RecipientId = u[0].Id, ActorId = u[9].Id, Type = "follow", IsRead = false, CreatedAt = now.AddDays(-19) },
+            new() { RecipientId = u[0].Id, ActorId = u[1].Id, Type = "like",   PerfumeId = p[21].Id, IsRead = true,  CreatedAt = now.AddDays(-12) },
+            new() { RecipientId = u[2].Id, ActorId = u[8].Id, Type = "like",   PerfumeId = p[28].Id, IsRead = false, CreatedAt = now.AddDays(-10) },
+            new() { RecipientId = u[0].Id, ActorId = u[1].Id, Type = "review", PerfumeId = p[21].Id, IsRead = false, CreatedAt = now.AddDays(-12) },
+            new() { RecipientId = u[2].Id, ActorId = u[8].Id, Type = "review", PerfumeId = p[28].Id, IsRead = false, CreatedAt = now.AddDays(-10) },
+            new() { RecipientId = u[0].Id, ActorId = u[6].Id, Type = "community_invite", CommunityId = aquaticCommunity.Id, IsRead = true, CreatedAt = now.AddDays(-24) },
+            new() { RecipientId = u[1].Id, ActorId = u[7].Id, Type = "community_invite", CommunityId = gurmandCommunity.Id, IsRead = false, CreatedAt = now.AddDays(-20) },
+        };
+        db.Notifications.AddRange(notifications);
+        db.SaveChanges();
+
+        // --- Messages (takipleşen kullanıcılar arası sohbetler) ---
+        var messages = new List<Message>
+        {
+            new() { SenderId = u[0].Id, RecipientId = u[1].Id, Body = "Selam! Gurmand topluluğun çok keyifli görünüyor.", IsRead = true,  CreatedAt = now.AddDays(-27).AddMinutes(-30) },
+            new() { SenderId = u[1].Id, RecipientId = u[0].Id, Body = "Teşekkürler! Sen de aquatik tarafında işin ehlisin :)", IsRead = true,  CreatedAt = now.AddDays(-27).AddMinutes(-20) },
+            new() { SenderId = u[0].Id, RecipientId = u[1].Id, Body = "O vanilyalı kokuyu denedim, gerçekten iddialıymış.", IsRead = false, CreatedAt = now.AddDays(-12).AddMinutes(-10) },
+
+            new() { SenderId = u[2].Id, RecipientId = u[8].Id, Body = "Deri kokular konusunda senin önerilerine güveniyorum, yeni bir şey var mı?", IsRead = true,  CreatedAt = now.AddDays(-25).AddMinutes(-40) },
+            new() { SenderId = u[8].Id, RecipientId = u[2].Id, Body = "Tütün bazlı bir şişe aldım geçen, sana da uyar bence.", IsRead = true,  CreatedAt = now.AddDays(-25).AddMinutes(-25) },
+
+            new() { SenderId = u[4].Id, RecipientId = u[8].Id, Body = "Akşam kokuları için bir liste yapsak mı topluluğa?", IsRead = false, CreatedAt = now.AddDays(-15).AddMinutes(-15) },
+        };
+        db.Messages.AddRange(messages);
+        db.SaveChanges();
+
+        Console.WriteLine("[MockSeed] Ek mock veri eklendi: 10 kullanıcı, koleksiyonlar, yorumlar, loglar, beğeniler, takipler, 2 topluluk, postlar, bildirimler, mesajlar.");
+    }
+
+    // ---------------------------------------------------------------------
+    // Mock veriyi ve ona FK ile bağlı TÜM kayıtları (sonradan üretilenler dahil)
+    // doğru sırada siler. SEED_MOCK=clean ile tetiklenir.
+    // Restrict olan FK'ler (Follow, Message, Notification.Actor, Community.Owner)
+    // nedeniyle silme sırası kritik: önce çocuklar, en son User.
+    // ---------------------------------------------------------------------
+    public static void CleanMockData(AppDbContext db)
+    {
+        var mockUserIds = db.Users
+            .Where(u => u.Email.EndsWith(MockEmailSuffix))
+            .Select(u => u.Id)
+            .ToList();
+
+        if (mockUserIds.Count == 0)
+        {
+            Console.WriteLine("[MockClean] Silinecek mock kullanıcı bulunamadı.");
+            return;
+        }
+
+        var ids = mockUserIds.ToHashSet();
+
+        // Mock kullanıcıların sahip olduğu topluluklar (ve onlara ait üye/post/bildirimler).
+        var mockCommunityIds = db.Communities
+            .Where(c => ids.Contains(c.OwnerId))
+            .Select(c => c.Id)
+            .ToList();
+        var commIds = mockCommunityIds.ToHashSet();
+
+        // 1) Messages — gönderen VEYA alıcısı mock olan tüm mesajlar
+        db.Messages.RemoveRange(db.Messages.Where(m => ids.Contains(m.SenderId) || ids.Contains(m.RecipientId)));
+
+        // 2) Notifications — alıcısı/aktörü mock olan VEYA mock topluluğa ait
+        db.Notifications.RemoveRange(db.Notifications.Where(n =>
+            ids.Contains(n.RecipientId) || ids.Contains(n.ActorId) ||
+            (n.CommunityId != null && commIds.Contains(n.CommunityId.Value))));
+
+        // 3) CommunityPosts — mock kullanıcının yazdığı VEYA mock topluluktaki tüm postlar
+        db.CommunityPosts.RemoveRange(db.CommunityPosts.Where(cp =>
+            ids.Contains(cp.UserId) || commIds.Contains(cp.CommunityId)));
+
+        // 4) CommunityMembers — mock kullanıcının üyelikleri VEYA mock topluluğun üyeleri
+        db.CommunityMembers.RemoveRange(db.CommunityMembers.Where(cm =>
+            ids.Contains(cm.UserId) || commIds.Contains(cm.CommunityId)));
+
+        // 5) Communities — mock kullanıcının sahip olduğu topluluklar
+        db.Communities.RemoveRange(db.Communities.Where(c => commIds.Contains(c.Id)));
+
+        // 6) Follows — follower VEYA following mock olan
+        db.Follows.RemoveRange(db.Follows.Where(f => ids.Contains(f.FollowerId) || ids.Contains(f.FollowingId)));
+
+        // 7) Likes
+        db.Likes.RemoveRange(db.Likes.Where(l => ids.Contains(l.UserId)));
+
+        // 8) Reviews
+        db.Reviews.RemoveRange(db.Reviews.Where(r => ids.Contains(r.UserId)));
+
+        // 9) DailyLogs
+        db.DailyLogs.RemoveRange(db.DailyLogs.Where(d => ids.Contains(d.UserId)));
+
+        // 10) Collections
+        db.Collections.RemoveRange(db.Collections.Where(c => ids.Contains(c.UserId)));
+
+        db.SaveChanges();
+
+        // 11) En son: mock kullanıcıların kendisi
+        db.Users.RemoveRange(db.Users.Where(u => ids.Contains(u.Id)));
+        db.SaveChanges();
+
+        Console.WriteLine($"[MockClean] {mockUserIds.Count} mock kullanıcı ve bağlı tüm veriler silindi.");
+    }
 }

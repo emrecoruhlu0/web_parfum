@@ -18,6 +18,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: "Host=${DB_HOST:-postgres};Port=${DB_PORT:-5432};Database=${POSTGRES_DB:-web_parfum};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}"
+      # SEED_MOCK: boş=normal, "true"=ek mock veri ekle, "clean"=mock veriyi geri al
+      SEED_MOCK: ${SEED_MOCK:-}
     # Sadece localhost'a bind — Cloudflare/Nginx reverse proxy üzerinden erişim
     # Direkt public IP üzerinden bypass edilemez
     ports:
