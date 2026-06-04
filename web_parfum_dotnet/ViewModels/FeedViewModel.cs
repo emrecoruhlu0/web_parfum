@@ -29,4 +29,7 @@ public class FeedViewModel
     public bool HasFollows { get; set; }
     public List<Perfume> FallbackPopular { get; set; } = [];
     public List<PerfumeRecommendation> Recommendations { get; set; } = [];
+
+    // PerfumeId → mevcut geri bildirim (true=beğendim, false=beğenmedim). Yoksa anahtar yok.
+    public Dictionary<int, bool> FeedbackStates { get; set; } = [];
 }

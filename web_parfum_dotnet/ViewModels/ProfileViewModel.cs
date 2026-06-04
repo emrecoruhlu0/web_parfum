@@ -33,6 +33,9 @@ public class ProfileViewModel
     // Taste profile (yeni — tüm etkileşimlerden ağırlıklı hesaplanır)
     public TasteProfile? TasteProfile { get; set; }
     public List<PerfumeRecommendation> Recommendations { get; set; } = [];
+
+    // PerfumeId → mevcut geri bildirim (true=beğendim, false=beğenmedim). Yoksa anahtar yok.
+    public Dictionary<int, bool> FeedbackStates { get; set; } = [];
 }
 
 public record NoteFreq(string Name, int Count);

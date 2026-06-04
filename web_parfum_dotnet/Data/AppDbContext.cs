@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CommunityMember> CommunityMembers { get; set; }
     public DbSet<CommunityPost> CommunityPosts { get; set; }
     public DbSet<Message> Messages { get; set; }
+    public DbSet<RecommendationFeedback> RecommendationFeedbacks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<Like>()
             .HasIndex(l => new { l.UserId, l.PerfumeId }).IsUnique();
+
+        // Bir kullanıcı bir parfüme tek bir öneri geri bildirimi verebilir (güncellenebilir).
+        modelBuilder.Entity<RecommendationFeedback>()
+            .HasIndex(f => new { f.UserId, f.PerfumeId }).IsUnique();
 
         // Bir kullanıcı aynı parfümü hem owned hem wishlist hem tried işaretleyebilir,
         // ama aynı status iki kez olamaz.

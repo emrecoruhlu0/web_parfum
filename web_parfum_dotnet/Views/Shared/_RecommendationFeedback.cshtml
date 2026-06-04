@@ -1,0 +1,20 @@
+@*
+    Öneri kartı için beğendim/beğenmedim butonları.
+    Model: (int PerfumeId, bool? State)  — State: true=beğendim, false=beğenmedim, null=yok.
+    Anti-forgery token'ın sayfada bir kez bulunması gerekir (örn. @Html.AntiForgeryToken()).
+    İşlevsellik için sayfaya bir kez _RecommendationFeedbackScripts partial'ı eklenmeli.
+*@
+@model (int PerfumeId, bool? State)
+
+<div class="rec-feedback d-flex align-items-center gap-1" data-perfume-id="@Model.PerfumeId">
+    <button type="button"
+            class="btn btn-sm rec-fb-btn rec-fb-up @(Model.State == true ? "active" : "")"
+            data-liked="true" title="Bu öneri isabetli">
+        <i class="bi @(Model.State == true ? "bi-hand-thumbs-up-fill" : "bi-hand-thumbs-up")"></i>
+    </button>
+    <button type="button"
+            class="btn btn-sm rec-fb-btn rec-fb-down @(Model.State == false ? "active" : "")"
+            data-liked="false" title="Bu öneri bana uygun değil">
+        <i class="bi @(Model.State == false ? "bi-hand-thumbs-down-fill" : "bi-hand-thumbs-down")"></i>
+    </button>
+</div>

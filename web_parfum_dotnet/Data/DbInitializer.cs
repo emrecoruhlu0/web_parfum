@@ -57,8 +57,8 @@ public static class DbInitializer
             var cols = line.Split(';');
             if (cols.Length < headers.Length) { skipped++; continue; }
 
-            var name = Clean(Get(cols, idx, "Perfume"));
-            var brand = Clean(Get(cols, idx, "Brand"));
+            var name = Prettify(Clean(Get(cols, idx, "Perfume")));
+            var brand = Prettify(Clean(Get(cols, idx, "Brand")));
             if (name == null || brand == null) { skipped++; continue; }
 
             batch.Add(new Perfume
@@ -368,7 +368,7 @@ public static class DbInitializer
         {
             var cols = line.Split(';');
             if (cols.Length < headers.Length) continue;
-            var name = Clean(Get(cols, idx, "Perfume"));
+            var name = Prettify(Clean(Get(cols, idx, "Perfume")));
             var imgUrl = ExtractImageUrl(Get(cols, idx, "url"));
             if (name != null && imgUrl != null)
                 urlMap.TryAdd(name, imgUrl);
@@ -421,6 +421,17 @@ public static class DbInitializer
         var trimmed = val.Trim();
         if (trimmed.Equals("unknown", StringComparison.OrdinalIgnoreCase)) return null;
         return trimmed;
+    }
+
+    // CSV'deki Perfume/Brand alanları slug biçiminde gelir (örn. "jean-paul-gaultier").
+    // Tireleri boşluğa çevirip her kelimeyi Title Case yapar: "Jean Paul Gaultier".
+    private static string? Prettify(string? val)
+    {
+        if (string.IsNullOrWhiteSpace(val)) return null;
+        var spaced = val.Replace('-', ' ').Replace('_', ' ');
+        spaced = Regex.Replace(spaced, @"\s+", " ").Trim();
+        if (spaced.Length == 0) return null;
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(spaced.ToLowerInvariant());
     }
 
     private static int? ParseYear(string? val)

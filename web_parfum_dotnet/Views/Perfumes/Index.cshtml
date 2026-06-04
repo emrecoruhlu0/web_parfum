@@ -2,11 +2,6 @@
 
 @{
     ViewData["Title"] = "Keşfet";
-    bool HasActive() =>
-        !string.IsNullOrEmpty(Model.Brand) ||
-        !string.IsNullOrEmpty(Model.Gender) ||
-        !string.IsNullOrEmpty(Model.Accord) ||
-        !string.IsNullOrEmpty(Model.Search);
 }
 
 <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-2">
@@ -41,11 +36,6 @@
         </div>
     </div>
 
-    <!-- Hidden: chip filtreler buraya yazıyor -->
-    <input type="hidden" name="Brand" id="filterBrand" value="@Model.Brand" />
-    <input type="hidden" name="Gender" id="filterGender" value="@Model.Gender" />
-    <input type="hidden" name="Accord" id="filterAccord" value="@Model.Accord" />
-
     @if (Model.Genders.Any())
     {
         <div class="mb-3">
@@ -60,7 +50,7 @@
                         "unisex" => ("bi-gender-ambiguous", "#a855f7"),
                         _        => ("bi-person", "#888")
                     };
-                    var gActive = Model.Gender == g.Value;
+                    var gActive = Model.Gender.Contains(g.Value);
                     <a href="javascript:void(0)"
                        class="filter-chip filter-chip-color @(gActive ? "active" : "")"
                        data-filter="Gender" data-value="@g.Value"
@@ -75,16 +65,14 @@
 
     @{
         const int accordVisible = 12;
-        const int brandVisible = 15;
     }
 
     @if (Model.Accords.Any())
     {
-        var activeAccordSet = (Model.Accord ?? "")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(a => a.Trim()).ToHashSet();
-        var accordExpanded = activeAccordSet.Any(a =>
-            Model.Accords.FindIndex(f => f.Value == a) >= accordVisible);
+        var accordActiveIdx = Model.Accord.Count > 0
+            ? Model.Accords.FindIndex(a => Model.Accord.Contains(a.Value))
+            : -1;
+        var accordExpanded = accordActiveIdx >= accordVisible;
         <div class="mb-3">
             <div class="filter-section-label">Akor</div>
             <div class="filter-chips filter-collapsible @(accordExpanded ? "expanded" : "")"
@@ -93,7 +81,7 @@
                 {
                     var a = Model.Accords[i];
                     var st = AccordVisual.Get(a.Value);
-                    var active = activeAccordSet.Contains(a.Value);
+                    var active = Model.Accord.Contains(a.Value);
                     <a href="javascript:void(0)"
                        class="filter-chip filter-chip-color @(active ? "active" : "") @(i >= accordVisible ? "filter-chip-overflow" : "")"
                        data-filter="Accord" data-value="@a.Value"
@@ -119,21 +107,32 @@
             <div class="filter-section-label">
                 Marka
                 <span class="text-muted fw-normal" style="text-transform:none;letter-spacing:0">
-                    (@Model.Brands.Count toplam)
+                    (@Model.Brands.Count toplam@(Model.Brand.Count > 0 ? $" · {Model.Brand.Count} seçili" : ""))
                 </span>
             </div>
             <div class="brand-dropdown" id="brandDropdown">
                 <button type="button" class="brand-dropdown-trigger" id="brandDropdownToggle">
                     <i class="bi bi-tag me-2"></i>
-                    <span id="brandLabelText" class="@(string.IsNullOrEmpty(Model.Brand) ? "text-muted" : "fw-medium text-amber")">
-                        @(string.IsNullOrEmpty(Model.Brand) ? "Marka seç…" : Model.Brand)
-                    </span>
-                    <span id="brandClearWrap" class="@(string.IsNullOrEmpty(Model.Brand) ? "d-none" : "")">
+                    @if (Model.Brand.Count == 0)
+                    {
+                        <span class="text-muted">Marka seç…</span>
+                    }
+                    else if (Model.Brand.Count == 1)
+                    {
+                        <span class="fw-medium text-amber">@Model.Brand[0]</span>
                         <a href="javascript:void(0)" class="brand-clear ms-2"
-                           data-clear-brand title="Markayı temizle">
+                           data-clear-brand title="Markaları temizle">
                             <i class="bi bi-x-circle-fill"></i>
                         </a>
-                    </span>
+                    }
+                    else
+                    {
+                        <span class="fw-medium text-amber">@Model.Brand.Count marka seçili</span>
+                        <a href="javascript:void(0)" class="brand-clear ms-2"
+                           data-clear-brand title="Markaları temizle">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </a>
+                    }
                     <i class="bi bi-chevron-down ms-auto"></i>
                 </button>
                 <div class="brand-dropdown-panel">
@@ -146,16 +145,13 @@
                     <div class="brand-dropdown-list" id="brandDropdownList">
                         @foreach (var b in Model.Brands)
                         {
-                            var active = Model.Brand == b.Value;
+                            var active = Model.Brand.Contains(b.Value);
                             <a href="javascript:void(0)"
                                class="brand-dropdown-item @(active ? "active" : "")"
                                data-filter="Brand" data-value="@b.Value">
                                 <span class="brand-name">@b.Value</span>
                                 <span class="brand-count">@b.Count</span>
-                                @if (active)
-                                {
-                                    <i class="bi bi-check2 brand-check"></i>
-                                }
+                                <i class="bi bi-check2 brand-check" style="@(active ? "" : "visibility:hidden")"></i>
                             </a>
                         }
                         <div class="brand-dropdown-empty" id="brandDropdownEmpty">
@@ -167,28 +163,51 @@
         </div>
     }
 
-    <div id="activeBar"></div>
+    @if (Model.HasAnyFilter)
+    {
+        <div class="filter-active-bar">
+            <span class="text-muted small fw-medium me-1">
+                <i class="bi bi-funnel-fill text-amber me-1"></i>Aktif:
+            </span>
+            @if (!string.IsNullOrEmpty(Model.Search))
+            {
+                <span class="filter-active-pill" data-remove-filter data-key="Search" data-value="">
+                    "@Model.Search"
+                    <a href="javascript:void(0)"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            @foreach (var b in Model.Brand)
+            {
+                <span class="filter-active-pill" data-remove-filter data-key="Brand" data-value="@b">
+                    Marka: @b
+                    <a href="javascript:void(0)"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            @foreach (var g in Model.Gender)
+            {
+                <span class="filter-active-pill" data-remove-filter data-key="Gender" data-value="@g">
+                    @g
+                    <a href="javascript:void(0)"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            @foreach (var a in Model.Accord)
+            {
+                <span class="filter-active-pill" data-remove-filter data-key="Accord" data-value="@a">
+                    Akor: @a
+                    <a href="javascript:void(0)"><i class="bi bi-x"></i></a>
+                </span>
+            }
+            <a href="javascript:void(0)" id="clearAllFilters"
+               class="text-muted small text-decoration-none ms-auto">
+                <i class="bi bi-arrow-counterclockwise"></i> Tümünü temizle
+            </a>
+        </div>
+    }
 </form>
 
 <div id="perfumeResults">
     @await Html.PartialAsync("_PerfumeGrid", Model)
 </div>
-
-@functions {
-    Dictionary<string, string?> RouteWithout(string remove)
-    {
-        var r = new Dictionary<string, string?>
-        {
-            ["Search"] = Model.Search,
-            ["Brand"] = Model.Brand,
-            ["Gender"] = Model.Gender,
-            ["Accord"] = Model.Accord,
-            ["Sort"] = Model.Sort,
-        };
-        r[remove] = null;
-        return r;
-    }
-}
 
 @section Scripts {
     <script>
@@ -197,25 +216,34 @@
             const resultsContainer = document.getElementById('perfumeResults');
             if (!filterForm || !resultsContainer) return;
 
-            // AJAX ile filtre uygula → focus input'ta kalır, sadece grid yenilenir.
+            // Aktif çoklu filtreler — sayfa yüklenirken URL'den oku
+            const MULTI_KEYS = ['Brand', 'Gender', 'Accord'];
+            const activeFilters = { Brand: new Set(), Gender: new Set(), Accord: new Set() };
+            (function initFromUrl() {
+                const sp = new URLSearchParams(window.location.search);
+                MULTI_KEYS.forEach(k => sp.getAll(k).forEach(v => { if (v) activeFilters[k].add(v); }));
+            })();
+
+            function buildParams() {
+                const params = new URLSearchParams();
+                const search = filterForm.querySelector('input[name="Search"]')?.value?.trim();
+                if (search) params.set('Search', search);
+                const sort = filterForm.querySelector('select[name="Sort"]')?.value;
+                if (sort) params.set('Sort', sort);
+                MULTI_KEYS.forEach(k => {
+                    activeFilters[k].forEach(v => params.append(k, v));
+                });
+                return params;
+            }
+
             let currentController = null;
-            let isFetching = false;
-
-            async function applyFilters({ resetPage = true } = {}) {
-                if (resetPage) {
-                    // Yeni filtreleme her zaman 1. sayfadan başlar
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('Page');
-                    history.replaceState(null, '', url.pathname + url.search);
-                }
-
+            async function applyFilters() {
                 if (currentController) currentController.abort();
                 currentController = new AbortController();
 
-                const params = new URLSearchParams(new FormData(filterForm));
+                const params = buildParams();
                 const url = `${window.location.pathname}?${params.toString()}`;
 
-                isFetching = true;
                 resultsContainer.classList.add('is-loading');
                 try {
                     const res = await fetch(url, {
@@ -226,100 +254,98 @@
                     const html = await res.text();
                     resultsContainer.innerHTML = html;
                     history.replaceState(null, '', url);
+                    syncChipsUI();
+                    syncActiveBar();
                 } catch (e) {
                     if (e.name !== 'AbortError') console.error(e);
                 } finally {
-                    isFetching = false;
                     resultsContainer.classList.remove('is-loading');
                 }
             }
 
-            // ── Brand buton güncelle ──────────────────────────────────────
-            function updateBrandButton(value) {
-                const label     = document.getElementById('brandLabelText');
-                const clearWrap = document.getElementById('brandClearWrap');
+            // UI'yi activeFilters'a göre güncelle (chip active class + dropdown check'i)
+            function syncChipsUI() {
+                document.querySelectorAll('[data-filter][data-value]').forEach(el => {
+                    const k = el.dataset.filter;
+                    const v = el.dataset.value;
+                    if (!activeFilters[k]) return;
+                    const on = activeFilters[k].has(v);
+                    el.classList.toggle('active', on);
+                    const check = el.querySelector('.brand-check');
+                    if (check) check.style.visibility = on ? '' : 'hidden';
+                });
+                updateBrandTriggerLabel();
+            }
+
+            function updateBrandTriggerLabel() {
+                const trig = document.getElementById('brandDropdownToggle');
+                if (!trig) return;
+                const label = trig.querySelector('span');
                 if (!label) return;
-                if (value) {
-                    label.textContent = value;
-                    label.className   = 'fw-medium text-amber';
-                    clearWrap?.classList.remove('d-none');
-                } else {
+                const count = activeFilters.Brand.size;
+                const clearBtn = trig.querySelector('[data-clear-brand]');
+                if (count === 0) {
+                    label.className = 'text-muted';
                     label.textContent = 'Marka seç…';
-                    label.className   = 'text-muted';
-                    clearWrap?.classList.add('d-none');
+                    if (clearBtn) clearBtn.remove();
+                } else {
+                    label.className = 'fw-medium text-amber';
+                    label.textContent = count === 1
+                        ? [...activeFilters.Brand][0]
+                        : `${count} marka seçili`;
+                    if (!clearBtn) {
+                        const a = document.createElement('a');
+                        a.href = 'javascript:void(0)';
+                        a.className = 'brand-clear ms-2';
+                        a.setAttribute('data-clear-brand', '');
+                        a.title = 'Markaları temizle';
+                        a.innerHTML = '<i class="bi bi-x-circle-fill"></i>';
+                        a.addEventListener('click', clearBrand);
+                        label.after(a);
+                    }
                 }
             }
 
-            // ── Aktif filtre barı ─────────────────────────────────────────
-            const activeBar = document.getElementById('activeBar');
-
-            // Seçili akorları JS'de Set olarak tut
-            const selectedAccords = new Set(
-                '@Html.Raw(Model.Accord ?? "")'
-                    .split(',').map(s => s.trim()).filter(Boolean)
-            );
-
-            function syncAccordInput() {
-                document.getElementById('filterAccord').value = [...selectedAccords].join(',');
+            // Aktif filtre çubuğunu yeniden render et (server-render mantığıyla uyumlu)
+            function syncActiveBar() {
+                // Sunucu tarafı zaten yeni HTML üretmiyor (sadece grid AJAX'la geliyor).
+                // Filtre formundaki active-bar için basit: sayfa yenilenmeden var olan pill'leri
+                // gizle/ekle. Pratik çözüm: tıklanan pill'i kaldır, başkasını ekleme — yeni filtre
+                // chip'lerden zaten aktif görünüyor. Tam senkron için sayfayı yeniden çizmiyoruz;
+                // kullanıcı yeni bir filtre ekleyince mevcut bar yetersizse refresh edilmesi gerekir.
+                // Bu yüzden tam-render gerekirse tüm sayfayı yeniden çizelim:
+                renderActiveBar();
             }
 
-            function renderActivePills() {
-                if (!activeBar) return;
-                const search  = filterForm.querySelector('input[name="Search"]')?.value?.trim() || '';
-                const brand   = document.getElementById('filterBrand')?.value?.trim()  || '';
-                const gender  = document.getElementById('filterGender')?.value?.trim() || '';
+            function renderActiveBar() {
+                // Form içindeki .filter-active-bar'ı yeniden inşa et
+                let bar = filterForm.querySelector('.filter-active-bar');
+                const searchVal = (filterForm.querySelector('input[name="Search"]')?.value || '').trim();
+                const total = activeFilters.Brand.size + activeFilters.Gender.size + activeFilters.Accord.size + (searchVal ? 1 : 0);
 
-                if (!search && !brand && !gender && selectedAccords.size === 0) {
-                    activeBar.innerHTML = '';
+                if (total === 0) {
+                    if (bar) bar.remove();
                     return;
                 }
 
-                let html = '<span class="text-muted small fw-medium me-1"><i class="bi bi-funnel-fill text-amber me-1"></i>Aktif:</span>';
-                if (search) html += `<span class="filter-active-pill">"${search}" <a href="#" data-pill-clear="Search"><i class="bi bi-x"></i></a></span>`;
-                if (brand)  html += `<span class="filter-active-pill">Marka: ${brand} <a href="#" data-pill-clear="Brand"><i class="bi bi-x"></i></a></span>`;
-                if (gender) html += `<span class="filter-active-pill">${gender} <a href="#" data-pill-clear="Gender"><i class="bi bi-x"></i></a></span>`;
-                selectedAccords.forEach(a => {
-                    html += `<span class="filter-active-pill">Akor: ${a} <a href="#" data-pill-clear="Accord" data-accord-val="${a}"><i class="bi bi-x"></i></a></span>`;
-                });
-                html += '<a href="/Perfumes" class="text-muted small text-decoration-none ms-auto"><i class="bi bi-arrow-counterclockwise"></i> Tümünü temizle</a>';
-                activeBar.innerHTML = html;
-            }
-
-            // Pill X tıklaması — event delegation
-            activeBar?.addEventListener('click', (e) => {
-                const a = e.target.closest('[data-pill-clear]');
-                if (!a) return;
-                e.preventDefault();
-                const key = a.dataset.pillClear;
-                if (key === 'Search') {
-                    filterForm.querySelector('input[name="Search"]').value = '';
-                } else if (key === 'Accord') {
-                    const val = a.dataset.accordVal;
-                    if (val) {
-                        selectedAccords.delete(val);
-                        document.querySelectorAll(`[data-filter="Accord"][data-value="${val}"]`)
-                            .forEach(c => {
-                                c.classList.remove('active');
-                                const bg = c.dataset.colorBg;
-                                if (bg) { c.style.background = bg+'10'; c.style.borderColor = bg+'55'; c.style.color = bg; }
-                            });
-                    } else {
-                        selectedAccords.clear();
-                        document.querySelectorAll('[data-filter="Accord"]').forEach(c => c.classList.remove('active'));
-                    }
-                    syncAccordInput();
-                } else {
-                    const inp = document.getElementById('filter' + key);
-                    if (inp) inp.value = '';
-                    document.querySelectorAll(`[data-filter="${key}"]`).forEach(c => c.classList.remove('active'));
-                    if (key === 'Brand') updateBrandButton('');
+                if (!bar) {
+                    bar = document.createElement('div');
+                    bar.className = 'filter-active-bar';
+                    filterForm.appendChild(bar);
                 }
-                renderActivePills();
-                applyFilters();
-            });
 
-            // Sayfa ilk yüklendiğinde mevcut durumu göster
-            renderActivePills();
+                const parts = ['<span class="text-muted small fw-medium me-1"><i class="bi bi-funnel-fill text-amber me-1"></i>Aktif:</span>'];
+                const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                if (searchVal) {
+                    parts.push(`<span class="filter-active-pill" data-remove-filter data-key="Search" data-value="">"${esc(searchVal)}"<a href="javascript:void(0)"><i class="bi bi-x"></i></a></span>`);
+                }
+                activeFilters.Brand.forEach(v => parts.push(`<span class="filter-active-pill" data-remove-filter data-key="Brand" data-value="${esc(v)}">Marka: ${esc(v)}<a href="javascript:void(0)"><i class="bi bi-x"></i></a></span>`));
+                activeFilters.Gender.forEach(v => parts.push(`<span class="filter-active-pill" data-remove-filter data-key="Gender" data-value="${esc(v)}">${esc(v)}<a href="javascript:void(0)"><i class="bi bi-x"></i></a></span>`));
+                activeFilters.Accord.forEach(v => parts.push(`<span class="filter-active-pill" data-remove-filter data-key="Accord" data-value="${esc(v)}">Akor: ${esc(v)}<a href="javascript:void(0)"><i class="bi bi-x"></i></a></span>`));
+                parts.push('<a href="javascript:void(0)" id="clearAllFilters" class="text-muted small text-decoration-none ms-auto"><i class="bi bi-arrow-counterclockwise"></i> Tümünü temizle</a>');
+
+                bar.innerHTML = parts.join('');
+            }
 
             // Search input — debounce 300ms
             const searchInput = filterForm.querySelector('input[name="Search"]');
@@ -327,7 +353,6 @@
                 let searchTimer;
                 searchInput.addEventListener('input', () => {
                     clearTimeout(searchTimer);
-                    renderActivePills();
                     searchTimer = setTimeout(applyFilters, 300);
                 });
             }
@@ -340,38 +365,44 @@
             const sortSelect = document.getElementById('sortSelect');
             if (sortSelect) sortSelect.addEventListener('change', () => applyFilters());
 
-            // Chip tıklaması
-            document.querySelectorAll('[data-filter][data-value]').forEach(chip => {
-                chip.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const key = chip.dataset.filter;
-                    const val = chip.dataset.value;
-
-                    if (key === 'Accord') {
-                        const bg = chip.dataset.colorBg;
-                        const tx = chip.dataset.colorText;
-                        if (selectedAccords.has(val)) {
-                            selectedAccords.delete(val);
-                            chip.classList.remove('active');
-                            if (bg) { chip.style.background = bg+'10'; chip.style.borderColor = bg+'55'; chip.style.color = bg; }
-                        } else {
-                            selectedAccords.add(val);
-                            chip.classList.add('active');
-                            if (bg) { chip.style.background = bg; chip.style.borderColor = bg; chip.style.color = tx||'#fff'; }
-                        }
-                        syncAccordInput();
-                    } else {
-                        const input = document.getElementById('filter' + key);
-                        if (!input) return;
-                        input.value = (input.value === val) ? '' : val;
-                        if (key === 'Brand') updateBrandButton(input.value);
-                    }
-                    renderActivePills();
-                    applyFilters();
-                });
+            // Chip tıklaması → ilgili Set'e ekle/çıkar (TOGGLE), AJAX
+            document.addEventListener('click', (e) => {
+                const chip = e.target.closest('[data-filter][data-value]');
+                if (!chip || !filterForm.contains(chip)) return;
+                e.preventDefault();
+                const k = chip.dataset.filter;
+                const v = chip.dataset.value;
+                if (!activeFilters[k]) return;
+                if (activeFilters[k].has(v)) activeFilters[k].delete(v);
+                else activeFilters[k].add(v);
+                applyFilters();
             });
 
-            // "Daha fazla göster / daha az" toggle (akor satırı için)
+            // Aktif çubuktaki pill'lerden kaldır
+            document.addEventListener('click', (e) => {
+                const pill = e.target.closest('[data-remove-filter]');
+                if (!pill) return;
+                e.preventDefault();
+                const k = pill.dataset.key;
+                const v = pill.dataset.value;
+                if (k === 'Search') {
+                    if (searchInput) searchInput.value = '';
+                } else if (activeFilters[k]) {
+                    activeFilters[k].delete(v);
+                }
+                applyFilters();
+            });
+
+            // Tümünü temizle
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#clearAllFilters')) return;
+                e.preventDefault();
+                MULTI_KEYS.forEach(k => activeFilters[k].clear());
+                if (searchInput) searchInput.value = '';
+                applyFilters();
+            });
+
+            // "Daha fazla göster / daha az" toggle (akor satırı)
             document.querySelectorAll('.filter-toggle-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -380,7 +411,7 @@
                 });
             });
 
-            // Marka dropdown: aç/kapa, arama, dış tıkla kapat, X ile temizle
+            // Marka dropdown: aç/kapa, arama
             (function () {
                 const wrap = document.getElementById('brandDropdown');
                 if (!wrap) return;
@@ -392,9 +423,7 @@
                 toggle.addEventListener('click', (e) => {
                     if (e.target.closest('[data-clear-brand]')) return;
                     wrap.classList.toggle('open');
-                    if (wrap.classList.contains('open')) {
-                        setTimeout(() => search.focus(), 50);
-                    }
+                    if (wrap.classList.contains('open')) setTimeout(() => search.focus(), 50);
                 });
 
                 document.addEventListener('click', (e) => {
@@ -417,15 +446,16 @@
                     if (e.key === 'Escape') wrap.classList.remove('open');
                 });
 
-                wrap.addEventListener('click', (e) => {
-                    if (!e.target.closest('[data-clear-brand]')) return;
-                    e.stopPropagation();
-                    document.getElementById('filterBrand').value = '';
-                    updateBrandButton('');
-                    renderActivePills();
-                    applyFilters();
-                });
+                const clearBtn = wrap.querySelector('[data-clear-brand]');
+                if (clearBtn) clearBtn.addEventListener('click', clearBrand);
             })();
+
+            function clearBrand(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                activeFilters.Brand.clear();
+                applyFilters();
+            }
         })();
     </script>
 }

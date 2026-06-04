@@ -12,6 +12,13 @@
         : System.Globalization.CultureInfo.GetCultureInfo("tr-TR").TextInfo.ToTitleCase(s);
 }
 
+@if (TempData["ProfileUpdated"] is string updatedMsg)
+{
+    <div class="alert alert-success py-2 d-flex align-items-center">
+        <i class="bi bi-check-circle me-2"></i> @updatedMsg
+    </div>
+}
+
 <div class="row g-4">
     <!-- Sol: Profil Kartı -->
     <div class="col-lg-3">
@@ -31,9 +38,12 @@
 
             @if (Model.IsOwnProfile)
             {
-                <span class="badge bg-amber-soft text-amber mb-2">
+                <span class="badge bg-amber-soft text-amber mb-2 d-block">
                     <i class="bi bi-person-check me-1"></i> Kendi Profilin
                 </span>
+                <a asp-action="Settings" class="btn btn-sm btn-outline-secondary w-100">
+                    <i class="bi bi-gear me-1"></i> Profili Düzenle
+                </a>
             }
             else if (User.Identity?.IsAuthenticated == true)
             {
@@ -376,11 +386,13 @@
                     <div class="parfum-card p-4">
                         <h6 class="fw-bold mb-1"><i class="bi bi-magic text-amber me-2"></i>Sana Özel Öneriler</h6>
                         <p class="text-muted small mb-3">Koku profiline göre beğenebileceğin parfümler</p>
+                        @Html.AntiForgeryToken()
                         <div class="row row-cols-1 row-cols-md-2 g-3">
                             @foreach (var r in Model.Recommendations)
                             {
                                 var recPh = $"https://placehold.co/80x80/f8e8d0/d97706?text={Uri.EscapeDataString(r.Perfume.Brand?.Length > 0 ? r.Perfume.Brand.Substring(0, Math.Min(2, r.Perfume.Brand.Length)) : "?")}";
-                                <div class="col">
+                                bool? fbState = Model.FeedbackStates.TryGetValue(r.Perfume.Id, out var fb) ? fb : null;
+                                <div class="col" data-rec-card>
                                     <div class="parfum-card p-3 d-flex align-items-center gap-3" style="border:1px solid #f3eee5">
                                         <img src="@(string.IsNullOrEmpty(r.Perfume.ImageUrl) ? recPh : r.Perfume.ImageUrl)"
                                              alt="@r.Perfume.Name"
@@ -402,6 +414,9 @@
                                                     }
                                                 </div>
                                             }
+                                            <div class="mt-2">
+                                                @await Html.PartialAsync("_RecommendationFeedback", (r.Perfume.Id, fbState))
+                                            </div>
                                         </div>
                                         <div class="flex-shrink-0 text-end">
                                             <div class="fw-bold text-amber">%@((int)Math.Round(r.Score * 100))</div>
@@ -417,3 +432,10 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    @if (Model.IsOwnProfile && (Model.Section ?? "collection") == "taste" && Model.Recommendations.Any())
+    {
+        <partial name="_RecommendationFeedbackScripts" />
+    }
+}

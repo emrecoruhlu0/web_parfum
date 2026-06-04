@@ -70,35 +70,32 @@
                 var endPage = Math.Min(Model.TotalPages, Model.Page + 3);
             }
             <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
-                <a class="page-link" asp-action="Index"
-                   asp-all-route-data="@PageRoute(prev)">«</a>
+                <a class="page-link" href="@PageUrl(prev)">«</a>
             </li>
             @for (int i = startPage; i <= endPage; i++)
             {
                 <li class="page-item @(Model.Page == i ? "active" : "")">
-                    <a class="page-link" asp-action="Index"
-                       asp-all-route-data="@PageRoute(i)">@i</a>
+                    <a class="page-link" href="@PageUrl(i)">@i</a>
                 </li>
             }
             <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" asp-action="Index"
-                   asp-all-route-data="@PageRoute(next)">»</a>
+                <a class="page-link" href="@PageUrl(next)">»</a>
             </li>
         </ul>
     </nav>
 }
 
 @functions {
-    Dictionary<string, string?> PageRoute(int page)
+    string PageUrl(int page)
     {
-        return new Dictionary<string, string?>
-        {
-            ["Page"] = page.ToString(),
-            ["Search"] = Model.Search,
-            ["Brand"] = Model.Brand,
-            ["Gender"] = Model.Gender,
-            ["Accord"] = Model.Accord,
-            ["Sort"] = Model.Sort,
-        };
+        var qs = new List<string> { $"Page={page}" };
+        if (!string.IsNullOrWhiteSpace(Model.Search))
+            qs.Add($"Search={Uri.EscapeDataString(Model.Search)}");
+        if (!string.IsNullOrWhiteSpace(Model.Sort))
+            qs.Add($"Sort={Uri.EscapeDataString(Model.Sort)}");
+        foreach (var b in Model.Brand) qs.Add($"Brand={Uri.EscapeDataString(b)}");
+        foreach (var g in Model.Gender) qs.Add($"Gender={Uri.EscapeDataString(g)}");
+        foreach (var a in Model.Accord) qs.Add($"Accord={Uri.EscapeDataString(a)}");
+        return Url.Action("Index", "Perfumes") + "?" + string.Join("&", qs);
     }
 }

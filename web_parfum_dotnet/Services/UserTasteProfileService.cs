@@ -31,6 +31,12 @@ public class UserTasteProfileService(AppDbContext db)
     private const double DailyLogPerEntry = 0.3;
     private const double DailyLogMax = 3.0;
 
+    // Öneri kartındaki explicit geri bildirim. "Beğendim" like ile aynı seviyede
+    // pozitif; "Beğenmedim" daha güçlü negatif çünkü kullanıcı doğrudan öneriye
+    // "yanlış" demiştir — bu sinyal review/koleksiyon eksiğini kapatır.
+    private const double RecFeedbackLikeWeight = 2.0;
+    private const double RecFeedbackDislikeWeight = -2.5;
+
     // Hibrit ağırlıkları
     private const double ContentWeight = 0.7;
     private const double CollabWeight = 0.3;
@@ -123,6 +129,54 @@ public class UserTasteProfileService(AppDbContext db)
             .ToList();
     }
 
+    /// <summary>
+    /// Belirli bir parfüme içerik olarak benzeyen parfümleri döndürür (item-to-item).
+    /// Giriş gerektirmez — akor + nota vektörü üzerinden cosine benzerlik.
+    /// Aynı markaya küçük bir bonus verilir.
+    /// </summary>
+    public async Task<List<PerfumeRecommendation>> FindSimilarAsync(int perfumeId, int take = 6)
+    {
+        var target = await db.Perfumes.FirstOrDefaultAsync(p => p.Id == perfumeId);
+        if (target == null) return new();
+
+        var targetVec = BuildPerfumeVector(target);
+        if (targetVec.Count == 0) return new();
+
+        var targetAccords = ExtractAccords(target).ToHashSet();
+
+        var candidates = await db.Perfumes
+            .Where(p => p.Id != perfumeId)
+            .ToListAsync();
+
+        var recos = new List<PerfumeRecommendation>();
+        foreach (var p in candidates)
+        {
+            var pVec = BuildPerfumeVector(p);
+            if (pVec.Count == 0) continue;
+
+            var sim = CosineSimilarity(targetVec, pVec);
+            if (sim <= 0) continue;
+
+            // Aynı marka küçük bonus
+            if (!string.IsNullOrEmpty(p.Brand) &&
+                string.Equals(p.Brand, target.Brand, StringComparison.OrdinalIgnoreCase))
+                sim += 0.05;
+
+            var matching = ExtractAccords(p)
+                .Where(targetAccords.Contains)
+                .Take(3)
+                .ToList();
+
+            recos.Add(new PerfumeRecommendation(p, sim, sim, 0, matching));
+        }
+
+        return recos
+            .OrderByDescending(r => r.Score)
+            .ThenByDescending(r => r.Perfume.RatingCount ?? 0)
+            .Take(take)
+            .ToList();
+    }
+
     // --- private helpers ---
 
     private async Task<List<(Perfume Perfume, double Score)>> CollectPerfumeScoresAsync(int userId)
@@ -131,6 +185,7 @@ public class UserTasteProfileService(AppDbContext db)
         var reviews = await db.Reviews.Where(r => r.UserId == userId).Include(r => r.Perfume).ToListAsync();
         var collections = await db.Collections.Where(c => c.UserId == userId).Include(c => c.Perfume).ToListAsync();
         var logs = await db.DailyLogs.Where(d => d.UserId == userId).Include(d => d.Perfume).ToListAsync();
+        var feedbacks = await db.RecommendationFeedbacks.Where(f => f.UserId == userId).Include(f => f.Perfume).ToListAsync();
 
         var map = new Dictionary<int, (Perfume p, double s)>();
 
@@ -179,6 +234,10 @@ public class UserTasteProfileService(AppDbContext db)
             Add(perfume, w);
         }
 
+        // Öneri geri bildirimi: explicit beğendim/beğenmedim sinyali
+        foreach (var f in feedbacks)
+            Add(f.Perfume, f.Liked ? RecFeedbackLikeWeight : RecFeedbackDislikeWeight);
+
         return map.Values.Select(v => (v.p, v.s)).ToList();
     }
 
@@ -189,6 +248,8 @@ public class UserTasteProfileService(AppDbContext db)
         ids.UnionWith(await db.Reviews.Where(r => r.UserId == userId).Select(r => r.PerfumeId).ToListAsync());
         ids.UnionWith(await db.Collections.Where(c => c.UserId == userId).Select(c => c.PerfumeId).ToListAsync());
         ids.UnionWith(await db.DailyLogs.Where(d => d.UserId == userId).Select(d => d.PerfumeId).ToListAsync());
+        // Geri bildirim verilen parfümler de tekrar önerilmesin (özellikle "beğenmedim").
+        ids.UnionWith(await db.RecommendationFeedbacks.Where(f => f.UserId == userId).Select(f => f.PerfumeId).ToListAsync());
         return ids;
     }
 

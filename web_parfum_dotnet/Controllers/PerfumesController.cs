@@ -9,32 +9,34 @@ using WebParfum.ViewModels;
 
 namespace WebParfum.Controllers;
 
-public class PerfumesController(AppDbContext db, ICurrentUserService currentUser) : Controller
+public class PerfumesController(AppDbContext db, ICurrentUserService currentUser, UserTasteProfileService tasteProfile) : Controller
 {
     public async Task<IActionResult> Index(PerfumeIndexViewModel filter)
     {
         ViewData["ActivePage"] = "Discover";
 
+        // Normalize: boş/whitespace değerleri temizle, distinct yap
+        filter.Brand = filter.Brand.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+        filter.Gender = filter.Gender.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+        filter.Accord = filter.Accord.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+
         var query = db.Perfumes.AsQueryable().ApplySearch(filter.Search);
 
-        if (!string.IsNullOrWhiteSpace(filter.Brand))
-            query = query.Where(p => p.Brand == filter.Brand);
+        if (filter.Brand.Count > 0)
+            query = query.Where(p => filter.Brand.Contains(p.Brand));
 
-        if (!string.IsNullOrWhiteSpace(filter.Gender))
-            query = query.Where(p => p.Gender == filter.Gender);
+        if (filter.Gender.Count > 0)
+            query = query.Where(p => p.Gender != null && filter.Gender.Contains(p.Gender));
 
-        if (!string.IsNullOrWhiteSpace(filter.Accord))
+        if (filter.Accord.Count > 0)
         {
-            foreach (var a in filter.Accord
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => x.Trim()))
-            {
-                var accord = a;
-                query = query.Where(p =>
-                    p.Accord1 == accord || p.Accord2 == accord ||
-                    p.Accord3 == accord || p.Accord4 == accord ||
-                    p.Accord5 == accord);
-            }
+            var accords = filter.Accord;
+            query = query.Where(p =>
+                (p.Accord1 != null && accords.Contains(p.Accord1)) ||
+                (p.Accord2 != null && accords.Contains(p.Accord2)) ||
+                (p.Accord3 != null && accords.Contains(p.Accord3)) ||
+                (p.Accord4 != null && accords.Contains(p.Accord4)) ||
+                (p.Accord5 != null && accords.Contains(p.Accord5)));
         }
 
         if (filter.Year.HasValue)
@@ -116,6 +118,7 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
             Reviews = reviews,
             LikeCount = likeCount,
             CollectionCount = collectionCount,
+            SimilarPerfumes = await tasteProfile.FindSimilarAsync(id, take: 6),
         };
 
         if (currentUser.IsAuthenticated && currentUser.UserId is int userId)

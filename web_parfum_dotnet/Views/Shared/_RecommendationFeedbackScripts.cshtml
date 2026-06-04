@@ -1,0 +1,85 @@
+@*
+    Öneri geri bildirim butonlarının davranışı. Sayfada bir kez include edilmeli.
+    Gereksinim: sayfada @Html.AntiForgeryToken() ile bir token input'u olmalı.
+*@
+<style>
+    .rec-fb-btn {
+        border: 1px solid #f0e2cf;
+        background: #fff;
+        color: #b08968;
+        line-height: 1;
+        padding: 0.25rem 0.5rem;
+    }
+    .rec-fb-btn:hover { background: #faf3e9; }
+    .rec-fb-up.active { background: #d1f0dd; border-color: #9bd9b3; color: #1a7f4b; }
+    .rec-fb-down.active { background: #f8d7da; border-color: #f1aeb5; color: #b02a37; }
+    .rec-fb-btn:disabled { opacity: 0.6; }
+</style>
+
+<script>
+(function () {
+    function tokenValue() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    document.addEventListener('click', async function (e) {
+        var btn = e.target.closest('.rec-fb-btn');
+        if (!btn) return;
+        e.preventDefault();
+
+        var wrap = btn.closest('.rec-feedback');
+        if (!wrap) return;
+        var perfumeId = wrap.getAttribute('data-perfume-id');
+        var liked = btn.getAttribute('data-liked') === 'true';
+
+        var buttons = wrap.querySelectorAll('.rec-fb-btn');
+        buttons.forEach(function (b) { b.disabled = true; });
+
+        try {
+            var body = new URLSearchParams();
+            body.append('perfumeId', perfumeId);
+            body.append('liked', liked);
+
+            var res = await fetch('@Url.Action("Submit", "RecommendationFeedback")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'fetch',
+                    'Accept': 'application/json',
+                    'RequestVerificationToken': tokenValue()
+                },
+                body: body.toString()
+            });
+            if (!res.ok) return;
+
+            var data = await res.json();      // { state: true | false | null }
+            applyState(wrap, data.state);
+        } finally {
+            buttons.forEach(function (b) { b.disabled = false; });
+        }
+    });
+
+    function applyState(wrap, state) {
+        var up = wrap.querySelector('.rec-fb-up');
+        var down = wrap.querySelector('.rec-fb-down');
+        var upIcon = up.querySelector('i');
+        var downIcon = down.querySelector('i');
+
+        up.classList.toggle('active', state === true);
+        down.classList.toggle('active', state === false);
+        upIcon.className = 'bi ' + (state === true ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up');
+        downIcon.className = 'bi ' + (state === false ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down');
+
+        // "Beğenmedim" → bu parfüm bir daha önerilmeyecek; kartı yumuşakça kaldır.
+        if (state === false) {
+            var card = wrap.closest('[data-rec-card]');
+            if (card) {
+                card.style.transition = 'opacity 0.3s';
+                card.style.opacity = '0';
+                setTimeout(function () { card.remove(); }, 300);
+            }
+        }
+    }
+})();
+</script>

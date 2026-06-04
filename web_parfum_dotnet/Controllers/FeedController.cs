@@ -104,6 +104,15 @@ public class FeedController(AppDbContext db, ICurrentUserService currentUser, Us
         // Kullanıcının koku profiline göre kişiselleştirilmiş öneriler
         vm.Recommendations = await tasteService.RecommendAsync(userId, 8);
 
+        // Mevcut öneri geri bildirimleri (beğendim/beğenmedim butonlarının durumu için)
+        if (vm.Recommendations.Count > 0)
+        {
+            var recIds = vm.Recommendations.Select(r => r.Perfume.Id).ToList();
+            vm.FeedbackStates = await db.RecommendationFeedbacks
+                .Where(f => f.UserId == userId && recIds.Contains(f.PerfumeId))
+                .ToDictionaryAsync(f => f.PerfumeId, f => f.Liked);
+        }
+
         return View(vm);
     }
 }

@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebParfum.Data;
@@ -20,6 +23,82 @@ public class ProfileController(AppDbContext db, ICurrentUserService currentUser,
             return RedirectToAction("Login", "Auth");
 
         return RedirectToAction(nameof(View), new { username = currentUser.Username });
+    }
+
+    // /Profile/Settings → kendi profilini düzenle (kullanıcı adı + bio)
+    [HttpGet]
+    public async Task<IActionResult> Settings()
+    {
+        ViewData["ActivePage"] = "Profile";
+
+        if (!currentUser.IsAuthenticated || currentUser.UserId is not int uid)
+            return RedirectToAction("Login", "Auth");
+
+        var user = await db.Users.FindAsync(uid);
+        if (user == null) return RedirectToAction("Login", "Auth");
+
+        return View(new EditProfileViewModel
+        {
+            Username = user.Username,
+            Bio = user.Bio,
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Settings(EditProfileViewModel model)
+    {
+        ViewData["ActivePage"] = "Profile";
+
+        if (!currentUser.IsAuthenticated || currentUser.UserId is not int uid)
+            return RedirectToAction("Login", "Auth");
+
+        var user = await db.Users.FindAsync(uid);
+        if (user == null) return RedirectToAction("Login", "Auth");
+
+        if (!ModelState.IsValid) return View(model);
+
+        var newUsername = model.Username.Trim();
+
+        // Kullanıcı adı değiştiyse benzersizlik kontrolü (case-insensitive)
+        if (!string.Equals(newUsername, user.Username, StringComparison.OrdinalIgnoreCase))
+        {
+            var taken = await db.Users
+                .AnyAsync(u => u.Id != uid && EF.Functions.ILike(u.Username, newUsername));
+            if (taken)
+            {
+                ModelState.AddModelError(nameof(model.Username), "Bu kullanıcı adı zaten alınmış.");
+                return View(model);
+            }
+        }
+
+        var usernameChanged = !string.Equals(newUsername, user.Username, StringComparison.Ordinal);
+
+        user.Username = newUsername;
+        user.Bio = string.IsNullOrWhiteSpace(model.Bio) ? null : model.Bio.Trim();
+        await db.SaveChangesAsync();
+
+        // Kullanıcı adı değiştiyse auth cookie'sindeki Name claim'ini yenile
+        if (usernameChanged)
+            await RefreshSignInAsync(user);
+
+        TempData["ProfileUpdated"] = "Profil bilgilerin güncellendi.";
+        return RedirectToAction(nameof(View), new { username = user.Username });
+    }
+
+    // Cookie'deki claim'leri güncel kullanıcı bilgileriyle yeniden imzalar
+    private async Task RefreshSignInAsync(Models.User user)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Username),
+            new(ClaimTypes.Email, user.Email),
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
     }
 
     // /Profile/Search?q=…  → kullanıcı arama sayfası
@@ -140,7 +219,18 @@ public class ProfileController(AppDbContext db, ICurrentUserService currentUser,
         {
             vm.TasteProfile = await tasteService.ComputeAsync(user.Id);
             if (vm.TasteProfile.SignalCount > 0)
+            {
                 vm.Recommendations = await tasteService.RecommendAsync(user.Id, 12);
+
+                // Geri bildirim butonlarının durumu (yalnızca kendi profilinde gösterilir)
+                if (vm.IsOwnProfile && vm.Recommendations.Count > 0)
+                {
+                    var recIds = vm.Recommendations.Select(r => r.Perfume.Id).ToList();
+                    vm.FeedbackStates = await db.RecommendationFeedbacks
+                        .Where(f => f.UserId == user.Id && recIds.Contains(f.PerfumeId))
+                        .ToDictionaryAsync(f => f.PerfumeId, f => f.Liked);
+                }
+            }
         }
 
         // Aggregation: kullanıcının DailyLog'larındaki parfümlerin top notes ve accord'ları
