@@ -80,10 +80,11 @@
 
     @if (Model.Accords.Any())
     {
-        var accordActiveIdx = !string.IsNullOrEmpty(Model.Accord)
-            ? Model.Accords.FindIndex(a => a.Value == Model.Accord)
-            : -1;
-        var accordExpanded = accordActiveIdx >= accordVisible;
+        var activeAccordSet = (Model.Accord ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(a => a.Trim()).ToHashSet();
+        var accordExpanded = activeAccordSet.Any(a =>
+            Model.Accords.FindIndex(f => f.Value == a) >= accordVisible);
         <div class="mb-3">
             <div class="filter-section-label">Akor</div>
             <div class="filter-chips filter-collapsible @(accordExpanded ? "expanded" : "")"
@@ -92,7 +93,7 @@
                 {
                     var a = Model.Accords[i];
                     var st = AccordVisual.Get(a.Value);
-                    var active = Model.Accord == a.Value;
+                    var active = activeAccordSet.Contains(a.Value);
                     <a href="javascript:void(0)"
                        class="filter-chip filter-chip-color @(active ? "active" : "") @(i >= accordVisible ? "filter-chip-overflow" : "")"
                        data-filter="Accord" data-value="@a.Value"
@@ -124,18 +125,15 @@
             <div class="brand-dropdown" id="brandDropdown">
                 <button type="button" class="brand-dropdown-trigger" id="brandDropdownToggle">
                     <i class="bi bi-tag me-2"></i>
-                    @if (string.IsNullOrEmpty(Model.Brand))
-                    {
-                        <span class="text-muted">Marka seç…</span>
-                    }
-                    else
-                    {
-                        <span class="fw-medium text-amber">@Model.Brand</span>
+                    <span id="brandLabelText" class="@(string.IsNullOrEmpty(Model.Brand) ? "text-muted" : "fw-medium text-amber")">
+                        @(string.IsNullOrEmpty(Model.Brand) ? "Marka seç…" : Model.Brand)
+                    </span>
+                    <span id="brandClearWrap" class="@(string.IsNullOrEmpty(Model.Brand) ? "d-none" : "")">
                         <a href="javascript:void(0)" class="brand-clear ms-2"
                            data-clear-brand title="Markayı temizle">
                             <i class="bi bi-x-circle-fill"></i>
                         </a>
-                    }
+                    </span>
                     <i class="bi bi-chevron-down ms-auto"></i>
                 </button>
                 <div class="brand-dropdown-panel">
@@ -169,45 +167,7 @@
         </div>
     }
 
-    @if (HasActive())
-    {
-        <div class="filter-active-bar">
-            <span class="text-muted small fw-medium me-1">
-                <i class="bi bi-funnel-fill text-amber me-1"></i>Aktif:
-            </span>
-            @if (!string.IsNullOrEmpty(Model.Search))
-            {
-                <span class="filter-active-pill">
-                    "@Model.Search"
-                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Search")"><i class="bi bi-x"></i></a>
-                </span>
-            }
-            @if (!string.IsNullOrEmpty(Model.Brand))
-            {
-                <span class="filter-active-pill">
-                    Marka: @Model.Brand
-                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Brand")"><i class="bi bi-x"></i></a>
-                </span>
-            }
-            @if (!string.IsNullOrEmpty(Model.Gender))
-            {
-                <span class="filter-active-pill">
-                    @Model.Gender
-                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Gender")"><i class="bi bi-x"></i></a>
-                </span>
-            }
-            @if (!string.IsNullOrEmpty(Model.Accord))
-            {
-                <span class="filter-active-pill">
-                    Akor: @Model.Accord
-                    <a asp-action="Index" asp-all-route-data="@RouteWithout("Accord")"><i class="bi bi-x"></i></a>
-                </span>
-            }
-            <a asp-action="Index" class="text-muted small text-decoration-none ms-auto">
-                <i class="bi bi-arrow-counterclockwise"></i> Tümünü temizle
-            </a>
-        </div>
-    }
+    <div id="activeBar"></div>
 </form>
 
 <div id="perfumeResults">
@@ -274,12 +234,100 @@
                 }
             }
 
-            // Search input — debounce 300ms (form submit'i bastır, sadece AJAX)
+            // ── Brand buton güncelle ──────────────────────────────────────
+            function updateBrandButton(value) {
+                const label     = document.getElementById('brandLabelText');
+                const clearWrap = document.getElementById('brandClearWrap');
+                if (!label) return;
+                if (value) {
+                    label.textContent = value;
+                    label.className   = 'fw-medium text-amber';
+                    clearWrap?.classList.remove('d-none');
+                } else {
+                    label.textContent = 'Marka seç…';
+                    label.className   = 'text-muted';
+                    clearWrap?.classList.add('d-none');
+                }
+            }
+
+            // ── Aktif filtre barı ─────────────────────────────────────────
+            const activeBar = document.getElementById('activeBar');
+
+            // Seçili akorları JS'de Set olarak tut
+            const selectedAccords = new Set(
+                '@Html.Raw(Model.Accord ?? "")'
+                    .split(',').map(s => s.trim()).filter(Boolean)
+            );
+
+            function syncAccordInput() {
+                document.getElementById('filterAccord').value = [...selectedAccords].join(',');
+            }
+
+            function renderActivePills() {
+                if (!activeBar) return;
+                const search  = filterForm.querySelector('input[name="Search"]')?.value?.trim() || '';
+                const brand   = document.getElementById('filterBrand')?.value?.trim()  || '';
+                const gender  = document.getElementById('filterGender')?.value?.trim() || '';
+
+                if (!search && !brand && !gender && selectedAccords.size === 0) {
+                    activeBar.innerHTML = '';
+                    return;
+                }
+
+                let html = '<span class="text-muted small fw-medium me-1"><i class="bi bi-funnel-fill text-amber me-1"></i>Aktif:</span>';
+                if (search) html += `<span class="filter-active-pill">"${search}" <a href="#" data-pill-clear="Search"><i class="bi bi-x"></i></a></span>`;
+                if (brand)  html += `<span class="filter-active-pill">Marka: ${brand} <a href="#" data-pill-clear="Brand"><i class="bi bi-x"></i></a></span>`;
+                if (gender) html += `<span class="filter-active-pill">${gender} <a href="#" data-pill-clear="Gender"><i class="bi bi-x"></i></a></span>`;
+                selectedAccords.forEach(a => {
+                    html += `<span class="filter-active-pill">Akor: ${a} <a href="#" data-pill-clear="Accord" data-accord-val="${a}"><i class="bi bi-x"></i></a></span>`;
+                });
+                html += '<a href="/Perfumes" class="text-muted small text-decoration-none ms-auto"><i class="bi bi-arrow-counterclockwise"></i> Tümünü temizle</a>';
+                activeBar.innerHTML = html;
+            }
+
+            // Pill X tıklaması — event delegation
+            activeBar?.addEventListener('click', (e) => {
+                const a = e.target.closest('[data-pill-clear]');
+                if (!a) return;
+                e.preventDefault();
+                const key = a.dataset.pillClear;
+                if (key === 'Search') {
+                    filterForm.querySelector('input[name="Search"]').value = '';
+                } else if (key === 'Accord') {
+                    const val = a.dataset.accordVal;
+                    if (val) {
+                        selectedAccords.delete(val);
+                        document.querySelectorAll(`[data-filter="Accord"][data-value="${val}"]`)
+                            .forEach(c => {
+                                c.classList.remove('active');
+                                const bg = c.dataset.colorBg;
+                                if (bg) { c.style.background = bg+'10'; c.style.borderColor = bg+'55'; c.style.color = bg; }
+                            });
+                    } else {
+                        selectedAccords.clear();
+                        document.querySelectorAll('[data-filter="Accord"]').forEach(c => c.classList.remove('active'));
+                    }
+                    syncAccordInput();
+                } else {
+                    const inp = document.getElementById('filter' + key);
+                    if (inp) inp.value = '';
+                    document.querySelectorAll(`[data-filter="${key}"]`).forEach(c => c.classList.remove('active'));
+                    if (key === 'Brand') updateBrandButton('');
+                }
+                renderActivePills();
+                applyFilters();
+            });
+
+            // Sayfa ilk yüklendiğinde mevcut durumu göster
+            renderActivePills();
+
+            // Search input — debounce 300ms
             const searchInput = filterForm.querySelector('input[name="Search"]');
             if (searchInput) {
                 let searchTimer;
                 searchInput.addEventListener('input', () => {
                     clearTimeout(searchTimer);
+                    renderActivePills();
                     searchTimer = setTimeout(applyFilters, 300);
                 });
             }
@@ -292,15 +340,33 @@
             const sortSelect = document.getElementById('sortSelect');
             if (sortSelect) sortSelect.addEventListener('change', () => applyFilters());
 
-            // Chip tıklaması → hidden input'a yaz, AJAX uygula (toggle davranışı)
+            // Chip tıklaması
             document.querySelectorAll('[data-filter][data-value]').forEach(chip => {
                 chip.addEventListener('click', (e) => {
                     e.preventDefault();
                     const key = chip.dataset.filter;
                     const val = chip.dataset.value;
-                    const input = document.getElementById('filter' + key);
-                    if (!input) return;
-                    input.value = (input.value === val) ? '' : val;
+
+                    if (key === 'Accord') {
+                        const bg = chip.dataset.colorBg;
+                        const tx = chip.dataset.colorText;
+                        if (selectedAccords.has(val)) {
+                            selectedAccords.delete(val);
+                            chip.classList.remove('active');
+                            if (bg) { chip.style.background = bg+'10'; chip.style.borderColor = bg+'55'; chip.style.color = bg; }
+                        } else {
+                            selectedAccords.add(val);
+                            chip.classList.add('active');
+                            if (bg) { chip.style.background = bg; chip.style.borderColor = bg; chip.style.color = tx||'#fff'; }
+                        }
+                        syncAccordInput();
+                    } else {
+                        const input = document.getElementById('filter' + key);
+                        if (!input) return;
+                        input.value = (input.value === val) ? '' : val;
+                        if (key === 'Brand') updateBrandButton(input.value);
+                    }
+                    renderActivePills();
                     applyFilters();
                 });
             });
@@ -351,14 +417,14 @@
                     if (e.key === 'Escape') wrap.classList.remove('open');
                 });
 
-                const clearBtn = wrap.querySelector('[data-clear-brand]');
-                if (clearBtn) {
-                    clearBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        document.getElementById('filterBrand').value = '';
-                        applyFilters();
-                    });
-                }
+                wrap.addEventListener('click', (e) => {
+                    if (!e.target.closest('[data-clear-brand]')) return;
+                    e.stopPropagation();
+                    document.getElementById('filterBrand').value = '';
+                    updateBrandButton('');
+                    renderActivePills();
+                    applyFilters();
+                });
             })();
         })();
     </script>

@@ -25,10 +25,16 @@ public class PerfumesController(AppDbContext db, ICurrentUserService currentUser
 
         if (!string.IsNullOrWhiteSpace(filter.Accord))
         {
-            var a = filter.Accord;
-            query = query.Where(p =>
-                p.Accord1 == a || p.Accord2 == a || p.Accord3 == a ||
-                p.Accord4 == a || p.Accord5 == a);
+            foreach (var a in filter.Accord
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim()))
+            {
+                var accord = a;
+                query = query.Where(p =>
+                    p.Accord1 == accord || p.Accord2 == accord ||
+                    p.Accord3 == accord || p.Accord4 == accord ||
+                    p.Accord5 == accord);
+            }
         }
 
         if (filter.Year.HasValue)
