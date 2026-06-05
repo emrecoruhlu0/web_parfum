@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 using WebParfum.Models;
 
 namespace WebParfum.Data;
@@ -11,7 +12,10 @@ public static class DbInitializer
 
     public static void Initialize(AppDbContext db)
     {
-        db.Database.EnsureCreated();
+        // EF Migrations: bekleyen tüm migration'ları uygula. Şema değişiklikleri
+        // (yeni tablo/kolon) bu sayede her deploy'da otomatik gelir. EnsureCreated
+        // kullanmıyoruz — o migration'ları atlar ve mevcut DB'ye yeni tablo eklemez.
+        db.Database.Migrate();
 
         var needsImageUpdate = db.Perfumes.Any() && !db.Perfumes.Any(p => p.ImageUrl != null);
         if (needsImageUpdate)
