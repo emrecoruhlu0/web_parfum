@@ -48,13 +48,13 @@
 
     <!-- Gönder Formu -->
     <div class="border-top p-3">
-        <form asp-action="Send" method="post" class="d-flex gap-2">
+        <form asp-action="Send" method="post" class="d-flex gap-2" id="sendForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="username" value="@Model.OtherUser.Username" />
-            <textarea name="body" class="form-control" rows="1" required
+            <textarea name="body" id="messageInput" class="form-control" rows="1" required
                       placeholder="Mesajını yaz…"
                       style="resize:none; overflow:hidden;"
-                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.submit();}"></textarea>
+                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"></textarea>
             <button type="submit" class="btn btn-amber flex-shrink-0">
                 <i class="bi bi-send-fill"></i>
             </button>
@@ -63,9 +63,88 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
     <script>
-        // Sayfayı aşağı kaydır
-        var list = document.getElementById('messageList');
-        if (list) list.scrollTop = list.scrollHeight;
+        (function () {
+            const myId = @(myId);
+            const otherId = @Model.OtherUser.Id;
+            const otherUsername = @Json.Serialize(Model.OtherUser.Username);
+            const list = document.getElementById('messageList');
+            const form = document.getElementById('sendForm');
+            const input = document.getElementById('messageInput');
+            const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+            const emptyState = list.querySelector('.text-center.text-muted');
+
+            function scrollToBottom() { list.scrollTop = list.scrollHeight; }
+            scrollToBottom();
+
+            function escapeHtml(s) {
+                const d = document.createElement('div');
+                d.textContent = s;
+                return d.innerHTML;
+            }
+
+            function timeLabel(iso) {
+                const d = new Date(iso);
+                return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function appendMessage(msg) {
+                if (emptyState) emptyState.remove();
+                const mine = msg.senderId === myId;
+                const wrap = document.createElement('div');
+                wrap.className = 'd-flex ' + (mine ? 'justify-content-end' : 'justify-content-start');
+                wrap.innerHTML =
+                    '<div class="chat-bubble ' + (mine ? 'chat-bubble-mine' : 'chat-bubble-theirs') + '">' +
+                        '<div>' + escapeHtml(msg.body) + '</div>' +
+                        '<div class="chat-time">' + timeLabel(msg.createdAt) + '</div>' +
+                    '</div>';
+                list.appendChild(wrap);
+                scrollToBottom();
+            }
+
+            // SignalR bağlantısı — anlık mesaj alımı
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl('/hubs/chat')
+                .withAutomaticReconnect()
+                .build();
+
+            connection.on('ReceiveMessage', function (msg) {
+                // Sadece bu konuşmaya ait mesajları göster
+                const relevant =
+                    (msg.senderId === otherId && msg.recipientId === myId) ||
+                    (msg.senderId === myId && msg.recipientId === otherId);
+                if (relevant) appendMessage(msg);
+            });
+
+            connection.start().catch(err => console.error('SignalR bağlantı hatası:', err));
+
+            // Mesaj gönderimi — fetch ile, sayfa yenilenmeden
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const body = input.value.trim();
+                if (!body) return;
+                input.value = '';
+                input.focus();
+
+                try {
+                    const res = await fetch('@Url.Action("Send", "Messages")', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                        body: new URLSearchParams({ username: otherUsername, body: body })
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => null);
+                        alert(data?.error || 'Mesaj gönderilemedi.');
+                        input.value = body; // geri yükle
+                    }
+                    // Başarılıysa mesaj SignalR üzerinden (kendi grubumuza da push edildiği için) gelecek.
+                } catch (err) {
+                    console.error(err);
+                    alert('Mesaj gönderilemedi.');
+                    input.value = body;
+                }
+            });
+        })();
     </script>
 }
