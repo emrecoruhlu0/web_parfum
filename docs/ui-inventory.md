@@ -3,6 +3,8 @@
 > Bu doküman, `web_parfum_dotnet` (ASP.NET Core MVC) arayüzünde kullanılan **tüm UI elementlerinin** sayfa
 > sayfa dökümüdür. Amaç: detaylı bir remake (yeniden tasarım / farklı stack'e taşıma) öncesi tam bir
 > referans çıkarmak. Her bölümde kaynak `.cshtml` / CSS / JS dosyalarına atıf vardır.
+>
+> **Yeni tasarım sistemi ve uygulama planı:** [DESIGN.md](./DESIGN.md)
 
 İçindekiler:
 1. [Global / Teknoloji Tabanı](#1-global--teknoloji-tabanı)

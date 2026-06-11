@@ -36,6 +36,13 @@ Parfüm meraklıları için Türkçe arayüzlü, full-stack sosyal platform. Kul
 
 ---
 
+## Tasarım
+
+Frontend yeniden tasarım planı ve tasarım sistemi: [`docs/DESIGN.md`](docs/DESIGN.md)  
+Mevcut arayüz element envanteri: [`docs/ui-inventory.md`](docs/ui-inventory.md)
+
+---
+
 ## Proje Yapısı
 
 ```
