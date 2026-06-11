@@ -492,10 +492,10 @@ Geçiş döneminde eski sınıflar alias olarak kalabilir (`@deprecated` yorumu 
 - [ ] Ekran görüntüsü baseline (mevcut UI archive)
 
 ### Faz 1 — Token & shell (1–2 gün)
-- [ ] `koku-tokens.css`, font CDN güncellemesi
-- [ ] `_Layout.cshtml` — yeni sidebar, mobil bar, sillage
-- [ ] Auth split layout (Login, Register, Home misafir)
-- [ ] Global buton, kart, form stilleri
+- [x] `koku-tokens.css`, font CDN güncellemesi
+- [x] `_Layout.cshtml` — yeni sidebar, mobil bar, sillage
+- [x] Auth split layout (Login, Register, Home misafir)
+- [x] Global buton, kart, form stilleri
 
 ### Faz 2 — Çekirdek sayfalar (2–3 gün)
 - [ ] Feed/Index (+ paylaşım modal, star-rating partial)

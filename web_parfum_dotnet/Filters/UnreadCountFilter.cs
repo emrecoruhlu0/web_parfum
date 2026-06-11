@@ -10,7 +10,10 @@ namespace WebParfum.Filters;
 /// Layout sidebar'ındaki bildirim badge'i için her authenticated request'te
 /// ViewData["UnreadCount"] değerini set eder.
 /// </summary>
-public class UnreadCountFilter(AppDbContext db, ICurrentUserService currentUser) : IAsyncActionFilter
+public class UnreadCountFilter(
+    AppDbContext db,
+    ICurrentUserService currentUser,
+    UserTasteProfileService tasteService) : IAsyncActionFilter
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -21,6 +24,7 @@ public class UnreadCountFilter(AppDbContext db, ICurrentUserService currentUser)
                 .CountAsync(n => n.RecipientId == userId && !n.IsRead);
 
             mvcController.ViewData["UnreadCount"] = count;
+            mvcController.ViewData["SillageColor"] = await tasteService.GetSillageColorAsync(userId);
         }
 
         await next();

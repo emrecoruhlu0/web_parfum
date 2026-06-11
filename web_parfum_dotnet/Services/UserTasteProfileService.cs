@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WebParfum.Data;
+using WebParfum.Helpers;
 using WebParfum.Models;
 
 namespace WebParfum.Services;
@@ -43,6 +44,19 @@ public class UserTasteProfileService(AppDbContext db)
 
     // NOTE: cache yok — küçük veri seti için her istek hesaplama yeterli.
     // Yavaşlama olursa IMemoryCache eklenebilir (key: $"taste:{userId}").
+
+    private const string DefaultSillageHex = "#5C3D2E";
+
+    /// <summary>Layout sillage çizgisi için baskın pozitif akor rengi.</summary>
+    public async Task<string> GetSillageColorAsync(int userId)
+    {
+        var profile = await ComputeAsync(userId);
+        if (profile.PositiveAccords.Count == 0)
+            return DefaultSillageHex;
+
+        var topAccord = profile.PositiveAccords.MaxBy(kv => kv.Value).Key;
+        return AccordVisual.Get(topAccord).Hex;
+    }
 
     public async Task<TasteProfile> ComputeAsync(int userId)
     {

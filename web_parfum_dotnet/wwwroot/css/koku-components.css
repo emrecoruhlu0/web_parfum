@@ -1,0 +1,182 @@
+/* Core UI components */
+
+/* Cards */
+.koku-card,
+.parfum-card {
+    background: var(--koku-surface);
+    border: 1px solid var(--koku-mist);
+    border-radius: var(--koku-radius-md);
+    box-shadow: var(--koku-shadow-sm);
+    transition: box-shadow 0.2s ease;
+}
+
+.koku-card:hover,
+.parfum-card:hover {
+    box-shadow: var(--koku-shadow-md);
+}
+
+/* Buttons */
+.btn-koku,
+.btn-amber {
+    background-color: var(--koku-resin);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+}
+
+.btn-koku:hover,
+.btn-amber:hover {
+    background-color: var(--koku-resin-hover);
+    color: #fff;
+}
+
+.btn-koku:focus,
+.btn-amber:focus {
+    box-shadow: 0 0 0 3px var(--koku-gold-soft);
+}
+
+.btn-koku-ghost {
+    background: transparent;
+    border: 1px solid var(--koku-mist-strong);
+    color: var(--koku-ink-soft);
+    font-weight: 500;
+}
+
+.btn-koku-ghost:hover {
+    background: var(--koku-resin-soft);
+    border-color: var(--koku-mist-strong);
+    color: var(--koku-ink);
+}
+
+/* Color helpers */
+.text-koku-accent,
+.text-amber {
+    color: var(--koku-resin) !important;
+}
+
+.bg-koku-accent,
+.bg-amber {
+    background-color: var(--koku-resin) !important;
+}
+
+.bg-koku-soft,
+.bg-amber-soft {
+    background-color: var(--koku-gold-soft) !important;
+}
+
+.bg-success-soft {
+    background-color: var(--koku-success-soft) !important;
+}
+
+.text-success {
+    color: var(--koku-success) !important;
+}
+
+.text-koku-muted {
+    color: var(--koku-ink-muted);
+}
+
+/* Avatars */
+.avatar-sm,
+.profile-avatar-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--koku-resin), var(--koku-gold));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.avatar-lg,
+.profile-avatar-lg {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--koku-resin), var(--koku-gold));
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+}
+
+.community-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--koku-radius-sm);
+    background: linear-gradient(135deg, var(--koku-resin), #3d2818);
+    color: var(--koku-gold);
+    font-weight: 700;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.community-avatar-lg {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--koku-radius-md);
+    background: linear-gradient(135deg, var(--koku-resin), #3d2818);
+    color: var(--koku-gold);
+    font-weight: 700;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Stars */
+.star {
+    color: var(--koku-gold);
+}
+
+.star-empty {
+    color: var(--koku-mist-strong);
+}
+
+/* Forms */
+.form-control,
+.form-select {
+    border-color: var(--koku-mist-strong);
+    background: var(--koku-surface);
+    color: var(--koku-ink);
+    border-radius: var(--koku-radius-sm);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--koku-resin);
+    box-shadow: 0 0 0 3px var(--koku-resin-soft);
+}
+
+.form-label {
+    color: var(--koku-ink-soft);
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+/* Badges — override Bootstrap defaults in app context */
+.badge.bg-warning.text-dark {
+    background-color: var(--koku-gold-soft) !important;
+    color: var(--koku-resin) !important;
+}
+
+/* Links */
+a.link-koku {
+    color: var(--koku-resin);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a.link-koku:hover {
+    color: var(--koku-resin-hover);
+    text-decoration: underline;
+}

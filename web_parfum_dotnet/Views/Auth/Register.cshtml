@@ -5,41 +5,44 @@
     Layout = "_Layout";
 }
 
-<div class="auth-container">
-    <div class="auth-card">
-        <h1 class="font-serif text-center mb-1" style="color:#1a1a2e;font-size:2rem;">Koku.</h1>
-        <p class="text-center text-muted small mb-4">Hesap oluştur</p>
+<div class="auth-split">
+    @await Html.PartialAsync("_AuthVisual")
+    <div class="auth-split-form">
+        <div class="auth-panel">
+            <h1 class="brand-sm mb-1">Koku.</h1>
+            <p class="text-center text-koku-muted small mb-4">Koku defterine ilk kaydını ekle</p>
 
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="alert alert-danger py-2">
-                @Html.ValidationSummary(false, "", new { @class = "mb-0" })
-            </div>
-        }
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger py-2">
+                    @Html.ValidationSummary(false, "", new { @class = "mb-0" })
+                </div>
+            }
 
-        <form asp-action="Register" method="post">
-            @Html.AntiForgeryToken()
-            <div class="mb-3">
-                <label asp-for="Username" class="form-label fw-medium">Kullanıcı Adı</label>
-                <input asp-for="Username" class="form-control" placeholder="kullanici_adi" autocomplete="username" />
-                <span asp-validation-for="Username" class="text-danger small"></span>
-            </div>
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label fw-medium">E-posta</label>
-                <input asp-for="Email" class="form-control" placeholder="ornek@mail.com" autocomplete="email" />
-                <span asp-validation-for="Email" class="text-danger small"></span>
-            </div>
-            <div class="mb-4">
-                <label asp-for="Password" class="form-label fw-medium">Şifre</label>
-                <input asp-for="Password" class="form-control" placeholder="En az 6 karakter" autocomplete="new-password" />
-                <span asp-validation-for="Password" class="text-danger small"></span>
-            </div>
-            <button type="submit" class="btn btn-amber w-100 py-2 fw-semibold">Kayıt Ol</button>
-        </form>
+            <form asp-action="Register" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label asp-for="Username" class="form-label">Kullanıcı adı</label>
+                    <input asp-for="Username" class="form-control" placeholder="kullanici_adi" autocomplete="username" />
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label">E-posta</label>
+                    <input asp-for="Email" class="form-control" placeholder="ornek@mail.com" autocomplete="email" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="Password" class="form-label">Şifre</label>
+                    <input asp-for="Password" class="form-control" placeholder="En az 6 karakter" autocomplete="new-password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+                <button type="submit" class="btn btn-koku w-100 py-2">Kayıt ol</button>
+            </form>
 
-        <p class="text-center text-muted mt-3 small">
-            Zaten hesabın var mı?
-            <a asp-controller="Auth" asp-action="Login" class="text-decoration-none fw-medium" style="color:#d97706;">Giriş yap</a>
-        </p>
+            <p class="text-center text-koku-muted mt-3 small">
+                Zaten hesabın var mı?
+                <a asp-controller="Auth" asp-action="Login" class="link-koku">Giriş yap</a>
+            </p>
+        </div>
     </div>
 </div>
