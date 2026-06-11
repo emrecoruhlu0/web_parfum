@@ -14,7 +14,7 @@
         <div class="flex-grow-1">
             <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
                 <div>
-                    <h1 class="font-serif fs-3 mb-1">@Model.Community.Name</h1>
+                    <h1 class="font-display fs-3 mb-1">@Model.Community.Name</h1>
                     <div class="text-muted small mb-2">
                         <i class="bi bi-people me-1"></i>@Model.MemberCount üye &nbsp;·&nbsp;
                         Kurucu: <a asp-controller="Profile" asp-action="View" asp-route-username="@Model.Community.Owner.Username"
@@ -71,7 +71,7 @@
                     </div>
 
                     <div class="d-flex align-items-center justify-content-end pt-2 border-top">
-                        <button type="submit" class="btn btn-amber btn-sm">
+                        <button type="submit" class="btn btn-koku btn-sm">
                             <i class="bi bi-send me-1"></i> Gönder
                         </button>
                     </div>

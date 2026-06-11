@@ -1,0 +1,17 @@
+@model WebParfum.ViewModels.EmptyStateViewModel
+
+<div class="koku-empty-state">
+    <i class="bi @Model.Icon koku-empty-icon" aria-hidden="true"></i>
+    <h2 class="koku-empty-title font-display">@Model.Title</h2>
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <p class="koku-empty-desc">@Model.Description</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ActionText) && !string.IsNullOrEmpty(Model.ActionController) && !string.IsNullOrEmpty(Model.ActionName))
+    {
+        <a asp-controller="@Model.ActionController" asp-action="@Model.ActionName"
+           class="btn btn-koku mt-2">
+            @Model.ActionText
+        </a>
+    }
+</div>

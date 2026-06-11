@@ -25,36 +25,34 @@
 
 <div class="row g-4">
     <div class="col-md-4">
-        <div class="card border-0 shadow-sm">
-            @{
-                var detailPlaceholder = $"https://placehold.co/400x400/f8e8d0/d97706?text={Uri.EscapeDataString(Model.Perfume.Brand?.Length > 0 ? Model.Perfume.Brand.Substring(0, Math.Min(2, Model.Perfume.Brand.Length)) : "?")}";
-            }
-            <img src="@(string.IsNullOrEmpty(Model.Perfume.ImageUrl) ? detailPlaceholder : Model.Perfume.ImageUrl)"
-                 alt="@Model.Perfume.Name"
-                 class="card-img-top"
-                 style="height:300px; object-fit:cover;"
-                 onerror="this.src='@detailPlaceholder'" />
-            <div class="card-body">
-                <h3 class="font-serif mb-1">@Model.Perfume.Name</h3>
+        <div class="koku-card perfume-detail-panel overflow-hidden">
+            @await Html.PartialAsync("_PerfumeImage", new PerfumeImageViewModel {
+                ImageUrl = Model.Perfume.ImageUrl,
+                Name = Model.Perfume.Name,
+                Brand = Model.Perfume.Brand,
+                Variant = "detail"
+            })
+            <div class="p-4">
+                <h3 class="font-display mb-1">@Model.Perfume.Name</h3>
                 <p class="text-muted">@Model.Perfume.Brand</p>
 
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     @if (Model.Perfume.Year.HasValue)
                     {
-                        <span class="badge bg-secondary">@Model.Perfume.Year</span>
+                        <span class="koku-badge">@Model.Perfume.Year</span>
                     }
                     @if (!string.IsNullOrEmpty(Model.Perfume.Gender))
                     {
-                        <span class="badge bg-info text-dark">@Model.Perfume.Gender</span>
+                        <span class="koku-badge">@Model.Perfume.Gender</span>
                     }
                     @if (!string.IsNullOrEmpty(Model.Perfume.Country))
                     {
-                        <span class="badge bg-light text-dark border">@Model.Perfume.Country</span>
+                        <span class="koku-badge">@Model.Perfume.Country</span>
                     }
                 </div>
 
                 <div class="mb-3">
-                    <span class="badge bg-warning text-dark fs-6">
+                    <span class="koku-badge koku-badge-rating fs-6">
                         <i class="bi bi-star-fill"></i> @(Model.Perfume.RatingValue?.ToString("F2") ?? "-")
                     </span>
                     <small class="text-muted ms-2">
@@ -62,14 +60,14 @@
                     </small>
                 </div>
 
-                <div class="row text-center mb-3">
-                    <div class="col">
+                <div class="row text-center mb-3 g-0">
+                    <div class="col detail-stat">
                         <strong data-like-count="@Model.Perfume.Id">@Model.LikeCount</strong>
-                        <div class="small text-muted">Beğeni</div>
+                        <div><span>Beğeni</span></div>
                     </div>
-                    <div class="col">
+                    <div class="col detail-stat">
                         <strong>@Model.CollectionCount</strong>
-                        <div class="small text-muted">Koleksiyon</div>
+                        <div><span>Koleksiyon</span></div>
                     </div>
                 </div>
 
@@ -103,7 +101,7 @@
                                     <input type="hidden" name="perfumeId" value="@Model.Perfume.Id" />
                                     <input type="hidden" name="status" value="@key" />
                                     <button type="submit"
-                                            class="btn @(active ? "btn-dark" : "btn-outline-dark") w-100 d-flex align-items-center justify-content-between">
+                                            class="btn w-100 d-flex align-items-center justify-content-between @(active ? "btn-collection-active" : "btn-collection-inactive")">
                                         <span>
                                             <i class="bi @icon me-1"></i> @label
                                         </span>
@@ -119,9 +117,8 @@
     </div>
 
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <h5 class="font-serif mb-3">Notalar</h5>
+        <div class="koku-card p-4 mb-4">
+                <h5 class="font-display mb-3">Notalar</h5>
 
                 @if (!string.IsNullOrEmpty(Model.Perfume.TopNotes))
                 {
@@ -175,12 +172,10 @@
                         }
                     }
                 </div>
-            </div>
         </div>
 
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h5 class="font-serif mb-3">Yorumlar (@Model.Reviews.Count)</h5>
+        <div class="koku-card p-4">
+                <h5 class="font-display mb-3">Yorumlar (@Model.Reviews.Count)</h5>
 
                 @if (User.Identity?.IsAuthenticated == true && Model.UserReview == null)
                 {
@@ -199,8 +194,8 @@
                         </div>
                         <textarea name="body" class="form-control mb-2" rows="2"
                                   placeholder="Yorumunuz..."></textarea>
-                        <button type="submit" class="btn btn-dark btn-sm">
-                            <i class="bi bi-pencil me-1"></i> Yorum Yaz
+                        <button type="submit" class="btn btn-koku btn-sm">
+                            <i class="bi bi-pencil me-1"></i> Yorum yaz
                         </button>
                     </form>
                 }
@@ -213,7 +208,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <strong>@r.User.Username</strong>
-                                    <span class="text-warning ms-2">
+                                    <span class="star ms-2">
                                         @for (int i = 0; i < r.Rating; i++)
                                         {
                                             <i class="bi bi-star-fill"></i>
@@ -242,9 +237,8 @@
                 }
                 else
                 {
-                    <p class="text-muted">Henüz yorum yok. İlk yorumu sen yaz!</p>
+                    <p class="text-koku-muted mb-0">Henüz yorum yok. İlk yorumu sen yaz.</p>
                 }
-            </div>
         </div>
     </div>
 </div>
@@ -252,7 +246,7 @@
 @if (Model.SimilarPerfumes.Any())
 {
     <div class="mt-5">
-        <h5 class="font-serif mb-3">
+        <h5 class="font-display mb-3">
             <i class="bi bi-stars me-1 text-warning"></i> Benzer Parfümler
         </h5>
         <div class="row g-3">
@@ -270,7 +264,7 @@
                                      onerror="this.src='@placeholder'" />
                             </div>
                             <div class="card-body pt-2">
-                                <h6 class="font-serif mb-0 text-truncate text-dark">@p.Name</h6>
+                                <h6 class="font-display mb-0 text-truncate text-dark">@p.Name</h6>
                                 <p class="text-muted small mb-2 text-truncate">@p.Brand</p>
                                 <div class="d-flex flex-wrap gap-1">
                                     @foreach (var accord in reco.MatchingAccords)

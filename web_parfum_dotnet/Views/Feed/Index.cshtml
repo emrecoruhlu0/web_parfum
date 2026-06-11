@@ -6,9 +6,9 @@
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-    <h1 class="font-serif fs-3 mb-0">Ana Akış</h1>
+    <h1 class="font-display fs-3 mb-0">Ana Akış</h1>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-amber btn-sm" data-bs-toggle="modal" data-bs-target="#sharePostModal">
+        <button type="button" class="btn btn-koku btn-sm" data-bs-toggle="modal" data-bs-target="#sharePostModal">
             <i class="bi bi-plus-lg me-1"></i> Paylaş
         </button>
         <a asp-controller="Perfumes" asp-action="Index" class="btn btn-outline-secondary btn-sm">
@@ -20,7 +20,7 @@
 @if (Model.Recommendations.Any())
 {
     @Html.AntiForgeryToken()
-    <div class="parfum-card p-4 mb-4" style="background:linear-gradient(135deg,#fffaf2,#fdf4e3);border:1px solid #f0e2cf">
+    <div class="koku-card feed-rec-strip p-4 mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <div>
                 <h5 class="fw-bold mb-1"><i class="bi bi-magic text-amber me-2"></i>Sana Özel Öneriler</h5>
@@ -32,13 +32,13 @@
                 Tümünü Gör
             </a>
         </div>
-        <div class="d-flex gap-3 overflow-auto pb-2" style="scroll-snap-type:x mandatory">
+        <div class="d-flex gap-3 overflow-auto pb-2 feed-rec-scroll">
             @foreach (var r in Model.Recommendations)
             {
                 var recPh = $"https://placehold.co/80x80/f8e8d0/d97706?text={Uri.EscapeDataString(r.Perfume.Brand?.Length > 0 ? r.Perfume.Brand.Substring(0, Math.Min(2, r.Perfume.Brand.Length)) : "?")}";
                 bool? fbState = Model.FeedbackStates.TryGetValue(r.Perfume.Id, out var fb) ? fb : null;
-                <div class="flex-shrink-0" data-rec-card style="width:200px;scroll-snap-align:start">
-                    <div class="parfum-card p-3 h-100 d-flex flex-column" style="background:white">
+                <div class="flex-shrink-0 feed-rec-card" data-rec-card>
+                    <div class="koku-card p-3 h-100 d-flex flex-column">
                         <a asp-controller="Perfumes" asp-action="Details" asp-route-id="@r.Perfume.Id"
                            class="text-decoration-none">
                             <img src="@(string.IsNullOrEmpty(r.Perfume.ImageUrl) ? recPh : r.Perfume.ImageUrl)"
@@ -49,7 +49,7 @@
                                 <div class="fw-medium text-dark text-truncate">@r.Perfume.Name</div>
                                 <div class="text-muted small text-truncate">@r.Perfume.Brand</div>
                                 <div class="mt-1 d-flex align-items-center justify-content-between">
-                                    <span class="badge bg-amber-soft text-amber">%@((int)Math.Round(r.Score * 100)) uyum</span>
+                                    <span class="koku-badge koku-badge-accent feed-match-pct">%@((int)Math.Round(r.Score * 100)) uyum</span>
                                     @if (r.Perfume.RatingValue.HasValue)
                                     {
                                         <span class="small text-amber"><i class="bi bi-star-fill me-1"></i>@r.Perfume.RatingValue?.ToString("F1")</span>
@@ -72,8 +72,7 @@
     <div class="profile-avatar-sm flex-shrink-0">
         @User.Identity?.Name?.Substring(0, 1).ToUpper()
     </div>
-    <button type="button" class="btn btn-light w-100 text-start text-muted rounded-pill"
-            style="background:#faf3e9; border:1px solid #f0e2cf;"
+    <button type="button" class="btn feed-quick-share w-100 text-start"
             data-bs-toggle="modal" data-bs-target="#sharePostModal">
         <i class="bi bi-droplet me-2 text-amber"></i>
         Bugün hangi parfümü denedin? Paylaş…
@@ -98,13 +97,13 @@
                             </a>
                             @if (item.Type == "review")
                             {
-                                <span class="badge bg-amber-soft text-amber">
+                                <span class="koku-badge koku-badge-type-review">
                                     <i class="bi bi-star-fill me-1"></i>Yorum
                                 </span>
                             }
                             else if (item.Type == "community")
                             {
-                                <span class="badge bg-info-subtle text-info">
+                                <span class="koku-badge koku-badge-type-community">
                                     <i class="bi bi-people-fill me-1"></i>Topluluk
                                 </span>
                                 @if (item.Community != null)
@@ -117,11 +116,11 @@
                             }
                             else
                             {
-                                <span class="badge bg-light text-muted">
+                                <span class="koku-badge koku-badge-type-log">
                                     <i class="bi bi-droplet-fill me-1"></i>Günlük Log
                                 </span>
                             }
-                            <small class="text-muted ms-auto">@item.CreatedAt.ToString("dd.MM HH:mm")</small>
+                            <small class="feed-item-time ms-auto">@item.CreatedAt.ToString("dd.MM HH:mm")</small>
                         </div>
 
                         @if (item.Type == "community" && !string.IsNullOrEmpty(item.Body))
@@ -185,26 +184,22 @@ else
 {
     @if (!Model.HasFollows)
     {
-        <div class="text-center py-5">
-            <div class="mb-3" style="font-size:3rem; color: var(--parfum-amber);">
-                <i class="bi bi-people"></i>
-            </div>
-            <h5 class="fw-semibold">Henüz kimseyi takip etmiyorsun</h5>
-            <p class="text-muted mb-4">Parfüm meraklılarını keşfet ve takip et.</p>
-            <a asp-controller="Perfumes" asp-action="Index" class="btn btn-amber">
-                <i class="bi bi-search me-1"></i> Parfümleri Keşfet
-            </a>
-        </div>
+        @await Html.PartialAsync("_EmptyState", new EmptyStateViewModel {
+            Icon = "bi-people",
+            Title = "Henüz kimseyi takip etmiyorsun",
+            Description = "Parfüm meraklılarını keşfet ve takip et.",
+            ActionText = "Parfümleri keşfet",
+            ActionController = "Perfumes",
+            ActionName = "Index"
+        })
     }
     else
     {
-        <div class="text-center py-5">
-            <div class="mb-3" style="font-size:3rem; color: var(--parfum-amber);">
-                <i class="bi bi-clock-history"></i>
-            </div>
-            <h5 class="fw-semibold">Henüz aktivite yok</h5>
-            <p class="text-muted">Takip ettiğin kişiler yakında bir şeyler paylaşacak.</p>
-        </div>
+        @await Html.PartialAsync("_EmptyState", new EmptyStateViewModel {
+            Icon = "bi-clock-history",
+            Title = "Henüz aktivite yok",
+            Description = "Takip ettiğin kişiler yakında bir şeyler paylaşacak."
+        })
     }
 
     @if (Model.FallbackPopular.Any())
@@ -252,7 +247,7 @@ else
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title font-serif"><i class="bi bi-droplet text-amber me-2"></i>Paylaş</h5>
+                <h5 class="modal-title font-display"><i class="bi bi-droplet text-amber me-2"></i>Paylaş</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body pt-0">
@@ -289,10 +284,10 @@ else
                             </div>
 
                             <label class="form-label fw-medium small">Puanın</label>
-                            <div class="mb-3" id="reviewStars" data-rating-input>
+                            <div class="mb-3 star-rating" id="reviewStars" data-star-rating data-rating-input="reviewRating">
                                 @for (int i = 1; i <= 5; i++)
                                 {
-                                    <i class="bi bi-star fs-4 text-amber me-1" data-value="@i" style="cursor:pointer"></i>
+                                    <i class="bi bi-star fs-4 star me-1" data-value="@i"></i>
                                 }
                                 <input type="hidden" name="rating" id="reviewRating" value="0" required />
                             </div>
@@ -303,7 +298,7 @@ else
 
                             <div class="d-flex justify-content-end gap-2">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
-                                <button type="submit" class="btn btn-amber">
+                                <button type="submit" class="btn btn-koku">
                                     <i class="bi bi-send me-1"></i> Yorumu Paylaş
                                 </button>
                             </div>
@@ -343,7 +338,7 @@ else
 
                             <div class="d-flex justify-content-end gap-2">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
-                                <button type="submit" class="btn btn-amber">
+                                <button type="submit" class="btn btn-koku">
                                     <i class="bi bi-send me-1"></i> Logu Paylaş
                                 </button>
                             </div>
@@ -356,32 +351,6 @@ else
 </div>
 
 @section Scripts {
-    <script>
-        // Yıldız rating widget
-        (function () {
-            const wrap = document.getElementById('reviewStars');
-            if (!wrap) return;
-            const input = document.getElementById('reviewRating');
-            const stars = wrap.querySelectorAll('i[data-value]');
-            function paint(val) {
-                stars.forEach(s => {
-                    const v = parseInt(s.dataset.value, 10);
-                    s.classList.toggle('bi-star-fill', v <= val);
-                    s.classList.toggle('bi-star', v > val);
-                });
-            }
-            stars.forEach(s => {
-                s.addEventListener('click', () => {
-                    const v = parseInt(s.dataset.value, 10);
-                    input.value = v;
-                    paint(v);
-                });
-                s.addEventListener('mouseenter', () => paint(parseInt(s.dataset.value, 10)));
-            });
-            wrap.addEventListener('mouseleave', () => paint(parseInt(input.value, 10) || 0));
-        })();
-    </script>
-
     @if (Model.Recommendations.Any())
     {
         <partial name="_RecommendationFeedbackScripts" />

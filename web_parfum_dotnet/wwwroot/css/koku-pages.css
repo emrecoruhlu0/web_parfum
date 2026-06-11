@@ -1,0 +1,436 @@
+/* Page-level patterns — docs/DESIGN.md */
+
+.page-header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--koku-ink);
+    letter-spacing: -0.02em;
+}
+
+.page-header-sub {
+    font-size: 0.9375rem;
+}
+
+/* Badges */
+.koku-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--koku-radius-pill);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--koku-mist);
+    background: var(--koku-paper-raised);
+    color: var(--koku-ink-soft);
+}
+
+.koku-badge-accent {
+    background: var(--koku-gold-soft);
+    color: var(--koku-resin);
+    border-color: color-mix(in srgb, var(--koku-gold) 35%, transparent);
+}
+
+.koku-badge-rating {
+    background: var(--koku-gold-soft);
+    color: var(--koku-resin);
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8125rem;
+}
+
+.koku-badge-type-review { background: var(--koku-gold-soft); color: var(--koku-resin); border: none; }
+.koku-badge-type-log { background: var(--koku-paper-raised); color: var(--koku-ink-muted); border-color: var(--koku-mist); }
+.koku-badge-type-community { background: rgba(58, 107, 124, 0.12); color: var(--koku-info); border: none; }
+
+/* Segmented control (collection tabs, profile subtabs) */
+.koku-segmented,
+.subtab-buttons {
+    display: inline-flex;
+    background: var(--koku-paper-raised);
+    border: 1px solid var(--koku-mist);
+    border-radius: var(--koku-radius-pill);
+    padding: 4px;
+    gap: 2px;
+    flex-wrap: wrap;
+}
+
+.koku-segmented .nav-link,
+.koku-segmented a,
+.subtab-buttons .subtab-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 16px;
+    border-radius: var(--koku-radius-pill);
+    font-size: 0.85rem;
+    color: var(--koku-ink-soft);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.koku-segmented .nav-link:hover,
+.subtab-buttons .subtab-btn:hover {
+    color: var(--koku-resin);
+}
+
+.koku-segmented .nav-link.active,
+.koku-segmented a.active,
+.subtab-buttons .subtab-btn.active {
+    background: var(--koku-surface);
+    color: var(--koku-resin);
+    box-shadow: var(--koku-shadow-sm);
+    font-weight: 600;
+}
+
+.koku-segmented .badge {
+    background: var(--koku-mist) !important;
+    color: var(--koku-ink-soft) !important;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+}
+
+.koku-segmented .nav-link.active .badge {
+    background: var(--koku-gold-soft) !important;
+    color: var(--koku-resin) !important;
+}
+
+/* Empty state */
+.koku-empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.koku-empty-icon {
+    font-size: 2.75rem;
+    color: var(--koku-ink-faint);
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.koku-empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--koku-ink);
+    margin-bottom: 0.5rem;
+}
+
+.koku-empty-desc {
+    color: var(--koku-ink-muted);
+    max-width: 360px;
+    margin: 0 auto 0.5rem;
+    font-size: 0.9375rem;
+}
+
+/* Feed */
+.feed-rec-strip {
+    background: linear-gradient(135deg, var(--koku-surface), var(--koku-paper-raised));
+    border: 1px solid var(--koku-mist);
+}
+
+.feed-rec-scroll {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.feed-rec-card {
+    width: 200px;
+    scroll-snap-align: start;
+}
+
+.feed-quick-share {
+    background: var(--koku-paper-raised);
+    border: 1px solid var(--koku-mist);
+    color: var(--koku-ink-muted);
+    border-radius: var(--koku-radius-pill);
+    padding: 0.65rem 1rem;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.feed-quick-share:hover {
+    background: var(--koku-surface);
+    border-color: var(--koku-mist-strong);
+    color: var(--koku-ink-soft);
+}
+
+.feed-item-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--koku-ink-faint);
+}
+
+.feed-match-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+}
+
+/* Perfume thumbs */
+.perfume-thumb {
+    object-fit: cover;
+    border-radius: var(--koku-radius-sm);
+    border: 1px solid var(--koku-mist);
+    flex-shrink: 0;
+    background: var(--koku-paper-raised);
+}
+
+.perfume-thumb.thumb-sm { width: 40px; height: 40px; }
+.perfume-thumb.thumb-md { width: 48px; height: 48px; }
+
+.perfume-detail-img {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    border-radius: var(--koku-radius-md) var(--koku-radius-md) 0 0;
+    background: var(--koku-paper-raised);
+}
+
+.perfume-detail-panel {
+    position: sticky;
+    top: 1.5rem;
+}
+
+.detail-stat strong {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.25rem;
+    color: var(--koku-ink);
+}
+
+.detail-stat span {
+    font-size: 0.75rem;
+    color: var(--koku-ink-muted);
+}
+
+.btn-collection-active {
+    background: var(--koku-resin) !important;
+    border-color: var(--koku-resin) !important;
+    color: #fff !important;
+}
+
+.btn-collection-inactive {
+    background: transparent !important;
+    border-color: var(--koku-mist-strong) !important;
+    color: var(--koku-ink-soft) !important;
+}
+
+.btn-collection-inactive:hover {
+    background: var(--koku-resin-soft) !important;
+    color: var(--koku-ink) !important;
+}
+
+/* Discover */
+.filter-card {
+    background: var(--koku-surface);
+    border: 1px solid var(--koku-mist);
+    border-radius: var(--koku-radius-lg);
+    padding: 18px 20px;
+    box-shadow: var(--koku-shadow-sm);
+    margin-bottom: 1.5rem;
+}
+
+.filter-search-input {
+    background: var(--koku-paper-raised);
+    border-color: var(--koku-mist-strong);
+}
+
+.filter-search-input:focus {
+    border-color: var(--koku-resin);
+    background: var(--koku-surface);
+    box-shadow: 0 0 0 3px var(--koku-resin-soft);
+}
+
+.filter-chip {
+    background: var(--koku-paper-raised);
+    border-color: var(--koku-mist-strong);
+    color: var(--koku-ink-soft);
+}
+
+.filter-chip.active {
+    background: var(--koku-resin);
+    border-color: var(--koku-resin);
+    color: #fff;
+}
+
+.filter-section-label {
+    color: var(--koku-ink-muted);
+}
+
+.filter-sort-select {
+    background: var(--koku-paper-raised);
+    border-color: var(--koku-mist-strong);
+    color: var(--koku-ink-soft);
+}
+
+.perfume-grid-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--koku-ink-muted);
+}
+
+/* Calendar hero */
+.calendar-hero .calendar-cell {
+    min-height: 80px;
+    background: var(--koku-surface);
+    border-color: var(--koku-mist);
+}
+
+.calendar-hero .calendar-cell:hover:not(.empty) {
+    background: var(--koku-paper-raised);
+    border-color: var(--koku-mist-strong);
+}
+
+.calendar-hero .calendar-cell.today {
+    background: var(--koku-gold-soft);
+    border-color: var(--koku-resin);
+}
+
+.calendar-month-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+}
+
+.calendar-log-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+}
+
+/* Chat */
+.chat-bubble-mine {
+    background: var(--koku-resin);
+}
+
+.chat-bubble-theirs {
+    background: var(--koku-paper-raised);
+    color: var(--koku-ink);
+    border: 1px solid var(--koku-mist);
+}
+
+/* Notifications */
+.notification-item.unread {
+    background: var(--koku-resin-soft);
+    border-left-color: var(--koku-sillage);
+}
+
+.notification-icon {
+    background: var(--koku-paper-raised);
+    border: 1px solid var(--koku-mist);
+}
+
+/* Recommendation feedback */
+.rec-fb-btn {
+    border: 1px solid var(--koku-mist);
+    background: var(--koku-surface);
+    color: var(--koku-gold);
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--koku-radius-sm);
+}
+
+.rec-fb-btn:hover {
+    background: var(--koku-paper-raised);
+}
+
+.rec-fb-up.active {
+    background: var(--koku-success-soft);
+    border-color: color-mix(in srgb, var(--koku-success) 40%, transparent);
+    color: var(--koku-success);
+}
+
+.rec-fb-down.active {
+    background: var(--koku-danger-soft);
+    border-color: color-mix(in srgb, var(--koku-danger) 40%, transparent);
+    color: var(--koku-danger);
+}
+
+.rec-fb-btn:disabled {
+    opacity: 0.6;
+}
+
+/* Modal */
+.modal-content {
+    border: 1px solid var(--koku-mist);
+    border-radius: var(--koku-radius-lg);
+    box-shadow: var(--koku-shadow-lg);
+}
+
+.modal-header {
+    border-bottom-color: var(--koku-mist);
+}
+
+.modal-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+}
+
+/* Pagination */
+.pagination .page-link {
+    color: var(--koku-ink-soft);
+    border-color: var(--koku-mist);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--koku-resin);
+    border-color: var(--koku-resin);
+}
+
+.pagination .page-link:hover {
+    background: var(--koku-resin-soft);
+    color: var(--koku-resin);
+}
+
+/* Profile taste bars */
+.taste-bar-track {
+    height: 8px;
+    background: var(--koku-mist);
+    border-radius: var(--koku-radius-pill);
+    overflow: hidden;
+}
+
+.taste-bar-fill-positive {
+    height: 100%;
+    background: linear-gradient(90deg, var(--koku-resin), var(--koku-gold));
+    border-radius: var(--koku-radius-pill);
+}
+
+.taste-bar-fill-negative {
+    height: 100%;
+    background: var(--koku-danger);
+    border-radius: var(--koku-radius-pill);
+    opacity: 0.75;
+}
+
+/* Star rating interactive */
+.star-rating i[data-value] {
+    cursor: pointer;
+    color: var(--koku-gold);
+    transition: transform 0.1s;
+}
+
+.star-rating i[data-value]:hover {
+    transform: scale(1.1);
+}
+
+/* Prose (privacy) */
+.koku-prose {
+    max-width: 680px;
+    line-height: 1.65;
+    color: var(--koku-ink-soft);
+}
+
+.koku-prose h1 {
+    font-family: 'Fraunces', serif;
+    color: var(--koku-ink);
+}
+
+@media (max-width: 767.98px) {
+    .perfume-detail-panel {
+        position: static;
+    }
+
+    .perfume-detail-img {
+        height: 260px;
+    }
+
+    .calendar-hero .calendar-cell {
+        min-height: 60px;
+    }
+}

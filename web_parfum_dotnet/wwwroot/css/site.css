@@ -91,7 +91,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--parfum-amber);
+    background: var(--koku-resin);
     display: inline-block;
 }
 
@@ -216,7 +216,7 @@
 }
 
 .chat-bubble-mine {
-    background: var(--parfum-amber);
+    background: var(--koku-resin);
     color: #fff;
     border-bottom-right-radius: 4px;
 }
@@ -249,8 +249,8 @@
 }
 
 .notification-item.unread {
-    background: rgba(217, 119, 6, 0.04);
-    border-left: 3px solid var(--parfum-amber);
+    background: var(--koku-resin-soft);
+    border-left: 3px solid var(--koku-sillage);
 }
 
 .notification-icon {

@@ -1,0 +1,26 @@
+@model WebParfum.ViewModels.PerfumeImageViewModel
+@{
+    var brandText = Model.Brand?.Length > 0 ? Model.Brand[..Math.Min(2, Model.Brand.Length)] : "?";
+    var placeholder = $"https://placehold.co/400x400/F0EAE0/5C3D2E?text={Uri.EscapeDataString(brandText)}";
+    var src = string.IsNullOrEmpty(Model.ImageUrl) ? placeholder : Model.ImageUrl;
+    var alt = Model.Alt ?? Model.Name;
+    var variant = Model.Variant ?? "card";
+    var extra = Model.CssClass ?? "";
+}
+
+@if (variant == "card")
+{
+    <div class="perfume-card-img-wrap @extra">
+        <img src="@src" alt="@alt" class="perfume-card-img" onerror="this.src='@placeholder'" />
+    </div>
+}
+else if (variant == "detail")
+{
+    <img src="@src" alt="@alt" class="perfume-detail-img @extra"
+         onerror="this.src='@placeholder'" />
+}
+else
+{
+    <img src="@src" alt="@alt" class="perfume-thumb @(variant) @extra"
+         onerror="this.src='@placeholder'" />
+}

@@ -10,7 +10,7 @@
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div class="d-flex align-items-center gap-2">
-        <h1 class="font-serif fs-3 mb-0">Bildirimler</h1>
+        <h1 class="font-display fs-3 mb-0">Bildirimler</h1>
         @if (unreadCount > 0)
         {
             <span class="badge bg-danger rounded-pill">@unreadCount</span>
@@ -29,15 +29,15 @@
 
 @if (!Model.Any())
 {
-    <div class="text-center py-5">
-        <i class="bi bi-bell text-muted" style="font-size:3rem"></i>
-        <h5 class="fw-semibold mt-3">Henüz bildirim yok</h5>
-        <p class="text-muted">Takipçiler ve beğeniler burada görünecek.</p>
-    </div>
+    @await Html.PartialAsync("_EmptyState", new EmptyStateViewModel {
+        Icon = "bi-bell",
+        Title = "Henüz bildirim yok",
+        Description = "Takipçiler ve beğeniler burada görünecek."
+    })
 }
 else
 {
-    <div class="parfum-card overflow-hidden">
+    <div class="koku-card overflow-hidden">
         @foreach (var n in Model)
         {
             <div class="notification-item d-flex align-items-start gap-3 p-3 @(!n.IsRead ? "unread" : "")">

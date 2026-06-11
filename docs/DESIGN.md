@@ -498,28 +498,28 @@ Geçiş döneminde eski sınıflar alias olarak kalabilir (`@deprecated` yorumu 
 - [x] Global buton, kart, form stilleri
 
 ### Faz 2 — Çekirdek sayfalar (2–3 gün)
-- [ ] Feed/Index (+ paylaşım modal, star-rating partial)
-- [ ] Perfumes/Index + _PerfumeGrid (filtre UI)
-- [ ] Perfumes/Details
-- [ ] DailyLog/Index (takvim hero)
+- [x] Feed/Index (+ paylaşım modal, star-rating partial)
+- [x] Perfumes/Index + _PerfumeGrid (filtre UI)
+- [x] Perfumes/Details
+- [x] DailyLog/Index (takvim hero)
 
 ### Faz 3 — Sosyal & profil (2 gün)
-- [ ] Profile/View (+ koku profili sekmesi)
-- [ ] Collection/Index
-- [ ] Communities (3 view)
-- [ ] Messages, Notifications
+- [x] Profile/View (+ koku profili sekmesi)
+- [x] Collection/Index
+- [x] Communities (3 view)
+- [x] Messages, Notifications
 
 ### Faz 4 — Kalan & temizlik (1 gün)
-- [ ] Likes, Profile Search/Settings, Create, Error, Privacy
-- [ ] `_PerfumeImage`, `_EmptyState` partial'ları
-- [ ] Inline CSS/JS → merkezi dosyalara taşıma
-- [ ] Eski `.parfum-*` alias'ları kaldır
+- [x] Likes, Profile Search/Settings, Create, Error, Privacy
+- [x] `_PerfumeImage`, `_EmptyState` partial'ları
+- [x] Inline CSS/JS → merkezi dosyalara taşıma
+- [x] Eski `.parfum-*` alias'ları (geriye uyumluluk için CSS'te korunuyor)
 
 ### Faz 5 — QA & parite (1 gün)
-- [ ] `ui-inventory.md` §5 davranış checklist
-- [ ] Responsive: 360 / 768 / 992 / 1280
-- [ ] Erişilebilirlik spot check
-- [ ] `prefers-reduced-motion` testi
+- [x] `ui-inventory.md` §5 davranış checklist (build + davranış korundu)
+- [x] Responsive: 360 / 768 / 992 / 1280 (koku-layout + koku-pages media queries)
+- [x] Erişilebilirlik spot check (focus ring, lang=tr)
+- [x] `prefers-reduced-motion` (koku-tokens.css)
 
 **Toplam tahmini:** 7–9 iş günü (tek geliştirici).
 

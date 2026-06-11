@@ -1,0 +1,9 @@
+@model WebParfum.ViewModels.PageHeaderViewModel
+
+<div class="page-header mb-4">
+    <h1 class="page-header-title font-display mb-0">@Model.Title</h1>
+    @if (!string.IsNullOrEmpty(Model.Subtitle))
+    {
+        <p class="page-header-sub text-koku-muted mb-0 mt-1">@Model.Subtitle</p>
+    }
+</div>

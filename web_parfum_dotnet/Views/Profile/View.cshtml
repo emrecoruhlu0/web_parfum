@@ -333,9 +333,8 @@
                                         <span class="fw-medium">@NormalizeName(a.Key)</span>
                                         <span class="text-muted">@a.Value.ToString("0.0")</span>
                                     </div>
-                                    <div class="progress" style="height:8px;background:#f3eee5">
-                                        <div class="progress-bar" role="progressbar"
-                                             style="width:@(pct)%;background:linear-gradient(90deg,#f59e0b,#d97706)"></div>
+                                    <div class="taste-bar-track">
+                                        <div class="taste-bar-fill-positive" role="progressbar" style="width:@(pct)%"></div>
                                     </div>
                                 </div>
                             }
@@ -356,9 +355,8 @@
                                         <span class="fw-medium">@NormalizeName(a.Key)</span>
                                         <span class="text-muted">@a.Value.ToString("0.0")</span>
                                     </div>
-                                    <div class="progress" style="height:8px;background:#f3eee5">
-                                        <div class="progress-bar bg-danger" role="progressbar"
-                                             style="width:@(pct)%"></div>
+                                    <div class="taste-bar-track">
+                                        <div class="taste-bar-fill-negative" role="progressbar" style="width:@(pct)%"></div>
                                     </div>
                                 </div>
                             }

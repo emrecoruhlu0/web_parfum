@@ -6,67 +6,64 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="font-serif mb-1">Koleksiyonum</h2>
+        <h2 class="font-display mb-1">Koleksiyonum</h2>
         <p class="text-muted mb-0">Sahip olduğun, denediğin ve istediğin parfümler</p>
     </div>
-    <a asp-controller="Perfumes" asp-action="Index" class="btn btn-outline-dark">
-        <i class="bi bi-search me-1"></i> Parfüm Bul
+    <a asp-controller="Perfumes" asp-action="Index" class="btn btn-koku-ghost">
+        <i class="bi bi-search me-1"></i> Parfüm bul
     </a>
 </div>
 
-<ul class="nav nav-pills mb-4 gap-2">
+<ul class="nav koku-segmented mb-4">
     <li class="nav-item">
-        <a class="nav-link @(Model.Tab == "owned" ? "active bg-dark" : "text-dark")"
+        <a class="nav-link @(Model.Tab == "owned" ? "active" : "")"
            asp-action="Index" asp-route-status="owned">
             <i class="bi bi-collection me-1"></i> Sahibim
-            <span class="badge bg-light text-dark ms-1">@Model.OwnedCount</span>
+            <span class="badge ms-1">@Model.OwnedCount</span>
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link @(Model.Tab == "wishlist" ? "active bg-dark" : "text-dark")"
+        <a class="nav-link @(Model.Tab == "wishlist" ? "active" : "")"
            asp-action="Index" asp-route-status="wishlist">
-            <i class="bi bi-heart me-1"></i> İstek Listem
-            <span class="badge bg-light text-dark ms-1">@Model.WishlistCount</span>
+            <i class="bi bi-heart me-1"></i> İstek listem
+            <span class="badge ms-1">@Model.WishlistCount</span>
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link @(Model.Tab == "tried" ? "active bg-dark" : "text-dark")"
+        <a class="nav-link @(Model.Tab == "tried" ? "active" : "")"
            asp-action="Index" asp-route-status="tried">
             <i class="bi bi-droplet me-1"></i> Denedim
-            <span class="badge bg-light text-dark ms-1">@Model.TriedCount</span>
+            <span class="badge ms-1">@Model.TriedCount</span>
         </a>
     </li>
 </ul>
 
 @if (!Model.Items.Any())
 {
-    <div class="parfum-card card p-5 text-center">
-        <i class="bi bi-collection fs-1 text-muted mb-3"></i>
-        <h5>Henüz buraya bir şey eklemedin</h5>
-        <p class="text-muted">Parfüm sayfasından "@(Model.Tab == "owned" ? "Sahibim" : Model.Tab == "wishlist" ? "İstek Listem" : "Denedim")" butonunu kullanabilirsin.</p>
-        <div>
-            <a asp-controller="Perfumes" asp-action="Index" class="btn btn-dark">
-                <i class="bi bi-search me-1"></i> Parfüm Keşfet
-            </a>
-        </div>
-    </div>
+    @await Html.PartialAsync("_EmptyState", new EmptyStateViewModel {
+        Icon = "bi-collection",
+        Title = "Henüz buraya bir şey eklemedin",
+        Description = $"Parfüm sayfasından \"{(Model.Tab == "owned" ? "Sahibim" : Model.Tab == "wishlist" ? "İstek listem" : "Denedim")}\" ile ekleyebilirsin.",
+        ActionText = "Parfüm keşfet",
+        ActionController = "Perfumes",
+        ActionName = "Index"
+    })
 }
 else
 {
     <div class="row g-3">
         @foreach (var item in Model.Items)
         {
-            var ph = $"https://placehold.co/200x200/f8e8d0/d97706?text={Uri.EscapeDataString(item.Perfume.Brand?.Length > 0 ? item.Perfume.Brand.Substring(0, Math.Min(2, item.Perfume.Brand.Length)) : "?")}";
             <div class="col-sm-6 col-lg-4">
-                <div class="parfum-card card h-100">
-                    <div class="perfume-card-img-wrap">
-                        <img src="@(string.IsNullOrEmpty(item.Perfume.ImageUrl) ? ph : item.Perfume.ImageUrl)"
-                             alt="@item.Perfume.Name"
-                             class="perfume-card-img"
-                             onerror="this.src='@ph'" />
-                    </div>
+                <div class="koku-card card h-100 border-0">
+                    @await Html.PartialAsync("_PerfumeImage", new PerfumeImageViewModel {
+                        ImageUrl = item.Perfume.ImageUrl,
+                        Name = item.Perfume.Name,
+                        Brand = item.Perfume.Brand,
+                        Variant = "card"
+                    })
                     <div class="card-body pt-2">
-                        <h6 class="font-serif mb-0 text-truncate">@item.Perfume.Name</h6>
+                        <h6 class="font-display mb-0 text-truncate">@item.Perfume.Name</h6>
                         <p class="text-muted small mb-2 text-truncate">@item.Perfume.Brand</p>
 
                         @if (Model.Tab == "owned")

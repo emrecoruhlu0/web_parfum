@@ -7,22 +7,22 @@
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="font-serif fs-3 mb-0">Günlük Log</h1>
-    <button class="btn btn-amber btn-sm" data-bs-toggle="modal" data-bs-target="#addLogModal">
+    <h1 class="font-display fs-3 mb-0">Günlük Log</h1>
+    <button class="btn btn-koku btn-sm" data-bs-toggle="modal" data-bs-target="#addLogModal">
         <i class="bi bi-plus-lg me-1"></i> Log Ekle
     </button>
 </div>
 
 <!-- Takvim Başlığı -->
-<div class="parfum-card p-4 mb-4">
+<div class="koku-card calendar-hero p-4 mb-4">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <a asp-action="Index" asp-route-year="@Model.PrevMonth.Year" asp-route-month="@Model.PrevMonth.Month"
-           class="btn btn-outline-secondary btn-sm">
+           class="btn btn-koku-ghost btn-sm">
             <i class="bi bi-chevron-left"></i>
         </a>
         <div class="text-center">
-            <h5 class="font-serif fw-bold mb-0">@Model.MonthName</h5>
-            <small class="text-muted">@Model.TotalLogsThisMonth log girişi</small>
+            <h5 class="calendar-month-title mb-0">@Model.MonthName</h5>
+            <small class="calendar-log-count text-koku-muted">@Model.TotalLogsThisMonth log girişi</small>
         </div>
         <a asp-action="Index" asp-route-year="@Model.NextMonth.Year" asp-route-month="@Model.NextMonth.Month"
            class="btn btn-outline-secondary btn-sm">
@@ -200,7 +200,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title font-serif">Log Ekle</h5>
+                <h5 class="modal-title font-display">Log Ekle</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="Create" method="post">
@@ -237,7 +237,7 @@
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-amber">Kaydet</button>
+                    <button type="submit" class="btn btn-koku">Kaydet</button>
                 </div>
             </form>
         </div>
