@@ -1,0 +1,141 @@
+@model WebParfum.ViewModels.PerfumeIndexViewModel
+@using WebParfum.Helpers
+
+@{
+    ViewData["Title"] = "Katalog";
+    ViewData["PublicCatalog"] = true;
+    ViewData["ContentWidth"] = "wide";
+}
+
+<div class="mb-4">
+    <p class="text-muted small text-uppercase mb-1" style="letter-spacing:.08em">Herkese açık</p>
+    <h1 class="font-display mb-1">Parfüm kataloğu</h1>
+    <p class="text-muted mb-0">Giriş yapmadan ara, notaları ve akorları incele.</p>
+</div>
+
+<form method="get" asp-action="Index" class="filter-card" id="katalogSearch">
+    <div class="d-flex gap-3 align-items-center flex-wrap">
+        <div class="filter-search-wrap flex-grow-1" style="min-width:260px;">
+            <i class="bi bi-search"></i>
+            <input type="text" name="search" value="@Model.Search"
+                   class="filter-search-input"
+                   placeholder="Parfüm, marka veya nota ara… (Dior, oud, Sauvage)"
+                   autocomplete="off" />
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Sırala:</span>
+            <select name="sort" class="filter-sort-select" onchange="this.form.submit()">
+                <option value="popular" selected="@(Model.Sort == "popular")">Popüler</option>
+                <option value="rating" selected="@(Model.Sort == "rating")">Puan</option>
+                <option value="newest" selected="@(Model.Sort == "newest")">Yeni</option>
+            </select>
+        </div>
+    </div>
+</form>
+
+<div class="perfume-grid-meta text-muted small mb-2 mt-3">
+    @Model.TotalCount.ToString("N0") parfüm
+</div>
+
+@if (!Model.Perfumes.Any())
+{
+    @await Html.PartialAsync("_EmptyState", new EmptyStateViewModel {
+        Icon = "bi-search",
+        Title = "Sonuç bulunamadı",
+        Description = "Bu aramaya uyan parfüm yok. Farklı bir isim, marka veya nota dene.",
+        ActionText = "Aramayı temizle",
+        ActionController = "Katalog",
+        ActionName = "Index"
+    })
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var p in Model.Perfumes)
+        {
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+                <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none">
+                    <div class="koku-card card h-100 border-0">
+                        @await Html.PartialAsync("_PerfumeImage", new PerfumeImageViewModel {
+                            ImageUrl = p.ImageUrl,
+                            Name = p.Name,
+                            Brand = p.Brand,
+                            Variant = "card"
+                        })
+                        <div class="card-body pt-2">
+                            <h6 class="font-display mb-0 text-truncate text-dark">@p.Name</h6>
+                            <p class="text-muted small mb-2 text-truncate">@p.Brand</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    @if (!string.IsNullOrEmpty(p.Accord1))
+                                    {
+                                        var s1 = AccordVisual.Get(p.Accord1);
+                                        <span class="badge border me-1" style="font-size:.65rem;background:@(s1.Hex)20;color:@s1.Hex;border-color:@(s1.Hex)55 !important">
+                                            <i class="bi @s1.Icon me-1"></i>@p.Accord1
+                                        </span>
+                                    }
+                                </div>
+                                <span class="koku-badge koku-badge-rating">
+                                    <i class="bi bi-star-fill"></i> @(p.RatingValue?.ToString("F1") ?? "-")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            @{
+                var prev = Math.Max(1, Model.Page - 1);
+                var next = Math.Min(Model.TotalPages, Model.Page + 1);
+                var startPage = Math.Max(1, Model.Page - 3);
+                var endPage = Math.Min(Model.TotalPages, Model.Page + 3);
+            }
+            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                <a class="page-link" href="@PageUrl(prev)">«</a>
+            </li>
+            @for (int i = startPage; i <= endPage; i++)
+            {
+                <li class="page-item @(Model.Page == i ? "active" : "")">
+                    <a class="page-link" href="@PageUrl(i)">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" href="@PageUrl(next)">»</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@functions {
+    string PageUrl(int page)
+    {
+        var qs = new List<string> { $"page={page}" };
+        if (!string.IsNullOrWhiteSpace(Model.Search))
+            qs.Add($"search={Uri.EscapeDataString(Model.Search)}");
+        if (!string.IsNullOrWhiteSpace(Model.Sort))
+            qs.Add($"sort={Uri.EscapeDataString(Model.Sort)}");
+        return Url.Action("Index", "Katalog") + "?" + string.Join("&", qs);
+    }
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('katalogSearch');
+            const input = form?.querySelector('input[name="search"]');
+            if (!form || !input) return;
+            let timer;
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => form.submit(), 350);
+            });
+        })();
+    </script>
+}

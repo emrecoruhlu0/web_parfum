@@ -1,0 +1,211 @@
+@model WebParfum.ViewModels.PerfumeDetailViewModel
+@using WebParfum.Helpers
+
+@{
+    ViewData["Title"] = Model.Perfume.Name;
+    ViewData["PublicCatalog"] = true;
+    ViewData["ContentWidth"] = "wide";
+}
+
+@functions {
+    string RenderNoteChips(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        var sb = new System.Text.StringBuilder();
+        foreach (var n in NoteVisual.Split(raw))
+        {
+            var s = NoteVisual.Get(n);
+            sb.Append($"<span class=\"note-chip\" style=\"--note-color:{s.Hex}\">")
+              .Append($"<i class=\"bi {s.Icon}\"></i>")
+              .Append($"<span>{System.Net.WebUtility.HtmlEncode(n)}</span>")
+              .Append("</span>");
+        }
+        return sb.ToString();
+    }
+}
+
+<p class="mb-3">
+    <a asp-action="Index" class="link-koku text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i> Kataloğa dön
+    </a>
+</p>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="koku-card perfume-detail-panel overflow-hidden">
+            @await Html.PartialAsync("_PerfumeImage", new PerfumeImageViewModel {
+                ImageUrl = Model.Perfume.ImageUrl,
+                Name = Model.Perfume.Name,
+                Brand = Model.Perfume.Brand,
+                Variant = "detail"
+            })
+            <div class="p-4">
+                <h1 class="font-display mb-1">@Model.Perfume.Name</h1>
+                <p class="text-muted">@Model.Perfume.Brand</p>
+
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @if (Model.Perfume.Year.HasValue)
+                    {
+                        <span class="koku-badge">@Model.Perfume.Year</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Perfume.Gender))
+                    {
+                        <span class="koku-badge">@Model.Perfume.Gender</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Perfume.Country))
+                    {
+                        <span class="koku-badge">@Model.Perfume.Country</span>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <span class="koku-badge koku-badge-rating fs-6">
+                        <i class="bi bi-star-fill"></i> @(Model.Perfume.RatingValue?.ToString("F2") ?? "-")
+                    </span>
+                    <small class="text-muted ms-2">
+                        @(Model.Perfume.RatingCount ?? 0) oy
+                    </small>
+                </div>
+
+                <div class="row text-center g-0">
+                    <div class="col detail-stat">
+                        <strong>@Model.LikeCount</strong>
+                        <div><span>Beğeni</span></div>
+                    </div>
+                    <div class="col detail-stat">
+                        <strong>@Model.CollectionCount</strong>
+                        <div><span>Koleksiyon</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="koku-card p-4 mb-4">
+            <h2 class="font-display h4">Koku piramidi</h2>
+            <div class="note-pyramid">
+                @if (!string.IsNullOrEmpty(Model.Perfume.TopNotes))
+                {
+                    <div class="note-pyramid-tier note-pyramid-tier--top">
+                        <span class="note-pyramid-label">Üst notalar</span>
+                        <div class="note-chips">@Html.Raw(RenderNoteChips(Model.Perfume.TopNotes))</div>
+                    </div>
+                    <div class="note-pyramid-connector" aria-hidden="true"></div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Perfume.MiddleNotes))
+                {
+                    <div class="note-pyramid-tier note-pyramid-tier--heart">
+                        <span class="note-pyramid-label">Kalp notaları</span>
+                        <div class="note-chips">@Html.Raw(RenderNoteChips(Model.Perfume.MiddleNotes))</div>
+                    </div>
+                    <div class="note-pyramid-connector" aria-hidden="true"></div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Perfume.BaseNotes))
+                {
+                    <div class="note-pyramid-tier note-pyramid-tier--base">
+                        <span class="note-pyramid-label">Baz notalar</span>
+                        <div class="note-chips">@Html.Raw(RenderNoteChips(Model.Perfume.BaseNotes))</div>
+                    </div>
+                }
+                @if (string.IsNullOrEmpty(Model.Perfume.TopNotes)
+                     && string.IsNullOrEmpty(Model.Perfume.MiddleNotes)
+                     && string.IsNullOrEmpty(Model.Perfume.BaseNotes))
+                {
+                    <p class="text-koku-muted mb-0">Bu parfüm için nota bilgisi yok.</p>
+                }
+            </div>
+
+            <h3 class="h6 text-muted text-uppercase mt-4 mb-2" style="letter-spacing:.08em">Ana akorlar</h3>
+            <div class="d-flex flex-wrap gap-2">
+                @{
+                    var accords = new[]
+                    {
+                        Model.Perfume.Accord1, Model.Perfume.Accord2, Model.Perfume.Accord3,
+                        Model.Perfume.Accord4, Model.Perfume.Accord5
+                    };
+                    var anyAccord = false;
+                }
+                @foreach (var accord in accords)
+                {
+                    if (!string.IsNullOrEmpty(accord))
+                    {
+                        anyAccord = true;
+                        var s = AccordVisual.Get(accord);
+                        <span class="accord-chip" style="background:@s.Hex; color:@s.TextHex">
+                            <i class="bi @s.Icon"></i>
+                            <span>@accord</span>
+                        </span>
+                    }
+                }
+                @if (!anyAccord)
+                {
+                    <p class="text-koku-muted mb-0">Akor bilgisi yok.</p>
+                }
+            </div>
+        </div>
+
+        <div class="koku-card p-4">
+            <h2 class="font-display h4">Yorumlar <span class="text-muted" style="font-size:0.85em">(@Model.Reviews.Count)</span></h2>
+            @if (Model.Reviews.Any())
+            {
+                @foreach (var r in Model.Reviews)
+                {
+                    <div class="border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>@r.User.Username</strong>
+                                <span class="star ms-2">
+                                    @for (int i = 0; i < r.Rating; i++)
+                                    {
+                                        <i class="bi bi-star-fill"></i>
+                                    }
+                                </span>
+                            </div>
+                            <small class="text-muted">@r.CreatedAt.ToString("dd.MM.yyyy")</small>
+                        </div>
+                        @if (!string.IsNullOrEmpty(r.Body))
+                        {
+                            <p class="mb-0 mt-1">@r.Body</p>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-koku-muted mb-0">Henüz yorum yok.</p>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.SimilarPerfumes.Any())
+{
+    <div class="mt-5">
+        <h5 class="font-display mb-3">
+            <i class="bi bi-stars me-1 text-warning"></i> Benzer parfümler
+        </h5>
+        <div class="row g-3">
+            @foreach (var reco in Model.SimilarPerfumes)
+            {
+                var p = reco.Perfume;
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none">
+                        <div class="parfum-card card h-100">
+                            @await Html.PartialAsync("_PerfumeImage", new PerfumeImageViewModel {
+                                ImageUrl = p.ImageUrl,
+                                Name = p.Name,
+                                Brand = p.Brand,
+                                Variant = "card"
+                            })
+                            <div class="card-body pt-2">
+                                <h6 class="font-display mb-0 text-truncate text-dark">@p.Name</h6>
+                                <p class="text-muted small mb-2 text-truncate">@p.Brand</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+}

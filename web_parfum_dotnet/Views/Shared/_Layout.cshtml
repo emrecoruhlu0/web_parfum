@@ -106,6 +106,19 @@
         </main>
     </div>
 }
+else if (ViewData["PublicCatalog"] as bool? == true)
+{
+    <header class="public-topbar">
+        <a class="brand" asp-controller="Katalog" asp-action="Index">Koku.</a>
+        <span class="public-topbar-label">Katalog</span>
+        <a class="btn btn-koku btn-sm ms-auto" asp-controller="Auth" asp-action="Login">Giriş yap</a>
+    </header>
+    <main class="app-main app-main--public">
+        <div class="container-fluid px-0" style="max-width:1080px">
+            @RenderBody()
+        </div>
+    </main>
+}
 else
 {
     <main>

@@ -124,6 +124,44 @@ body {
     color: var(--koku-ink) !important;
 }
 
+/* Public catalog — no login, no sidebar */
+.public-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: var(--koku-paper-raised);
+    border-bottom: 1px solid var(--koku-mist);
+}
+
+.public-topbar .brand {
+    font-family: 'Fraunces', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--koku-ink);
+    text-decoration: none;
+}
+
+.public-topbar-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--koku-ink-muted);
+}
+
+.app-main--public {
+    margin-left: 0;
+    min-height: calc(100vh - 58px);
+}
+
+.app-main--public::before {
+    left: 0;
+}
+
 /* Mobile topbar */
 .mobile-topbar {
     display: none;
